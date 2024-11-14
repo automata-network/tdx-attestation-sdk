@@ -11,7 +11,7 @@
 
 ## Overview
 
-Automata TDX Attestation SDK is the most-feature complete SDK for Intel TDX development, it consists three parts:
+Automata TDX Attestation SDK is the most-feature complete SDK for Intel TDX development, it consists of three parts:
 
 * TDX package: it helps developers to generate the Intel TDX Quote in different cloud service providers (CSP).
 * Risc0 and Succinct CLIs to interact with the corresponding zkVM servers to generate the proofs, and constructs the [Automata DCAP Attestation](https://github.com/automata-network/automata-dcap-attestation) contracts calls to perform the on-chain verification.
