@@ -45,7 +45,7 @@ The example should successfully generate and verify an attestation report on any
 
 ## Rust API Usage
 
-### Initialise Tdx object
+### Initialize Tdx object
 
 In order to run the next few steps, first initialise a Tdx object:
 
