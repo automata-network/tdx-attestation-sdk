@@ -47,7 +47,7 @@ The example should successfully generate and verify an attestation report on any
 
 ### Initialize Tdx object
 
-In order to run the next few steps, first initialise a Tdx object:
+In order to run the next few steps, first initialize a Tdx object:
 
 ```rust
 use tdx::Tdx;
