@@ -92,9 +92,9 @@ pub fn main() {
     let mut output: Vec<u8> = Vec::with_capacity(journal_len);
     let output_len: u16 = serial_output.len() as u16;
 
-    output.extend_from_slice(&output_len.to_le_bytes());
+    output.extend_from_slice(&output_len.to_be_bytes());
     output.extend_from_slice(&serial_output);
-    output.extend_from_slice(&current_time.to_le_bytes());
+    output.extend_from_slice(&current_time.to_be_bytes());
     output.extend_from_slice(&tcbinfo_hash);
     output.extend_from_slice(&qeidentity_hash);
     output.extend_from_slice(&sgx_intel_root_ca_cert_hash);

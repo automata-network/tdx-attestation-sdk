@@ -97,9 +97,9 @@ fn main() {
     let mut journal_output: Vec<u8> = Vec::with_capacity(journal_len);
     let output_len: u16 = serial_output.len() as u16;
 
-    journal_output.extend_from_slice(&output_len.to_le_bytes());
+    journal_output.extend_from_slice(&output_len.to_be_bytes());
     journal_output.extend_from_slice(&serial_output);
-    journal_output.extend_from_slice(&current_time.to_le_bytes());
+    journal_output.extend_from_slice(&current_time.to_be_bytes());
     journal_output.extend_from_slice(&tcbinfo_hash);
     journal_output.extend_from_slice(&qeidentity_hash);
     journal_output.extend_from_slice(&sgx_intel_root_ca_cert_hash);

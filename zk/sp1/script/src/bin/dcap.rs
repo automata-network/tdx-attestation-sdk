@@ -65,7 +65,7 @@ fn main() {
     println!("Successfully verified proof.");
 
     let ret_slice = ret.as_slice();
-    let output_len = u16::from_le_bytes([ret_slice[0], ret_slice[1]]) as usize;
+    let output_len = u16::from_be_bytes([ret_slice[0], ret_slice[1]]) as usize;
     let mut output = Vec::with_capacity(output_len);
     output.extend_from_slice(&ret_slice[2..2 + output_len]);
 
