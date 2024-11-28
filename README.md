@@ -11,10 +11,9 @@
 
 ## Overview
 
-Automata TDX Attestation SDK is the most-feature complete SDK for Intel TDX development, it consists of three parts:
+Automata TDX Attestation SDK is the most-feature complete SDK for Intel TDX development, it consists of two parts:
 
 * TDX package: it helps developers to generate the Intel TDX Quote in different cloud service providers (CSP).
-* Risc0 and Succinct CLIs to interact with the corresponding zkVM servers to generate the proofs, and constructs the [Automata DCAP Attestation](https://github.com/automata-network/automata-dcap-attestation) contracts calls to perform the on-chain verification.
 * Risc0 and Succinct ZK host and guest programs.
 
 ### Environment Preparation
@@ -33,19 +32,28 @@ function verifyAndAttestOnChain(bytes calldata rawQuote)
 It accepts the raw quote hex string to perform the on-chain verification, all collaterals will be fetched from the [Automata on-chain PCCS](https://github.com/automata-network/automata-on-chain-pccs).
 
 ```solidity
-function verifyAndAttestWithZKProof(bytes calldata output, bytes calldata proofBytes)
+function verifyAndAttestWithZKProof(bytes calldata output, ZkCoProcessorType zkCoprocessor, bytes calldata proofBytes)
 ```
-The first parameter represents the output of the zkVM, while the second one is consist of the ZK type and its corresponding proof. It supports two kinds of ZK technologies to perform the on-chain verification:
+The first parameter represents the output of the zkVM, the second one is the zkVM type, and the third one is its corresponding proof. It supports two kinds of ZK technologies to perform the on-chain verification:
 
 * [Risc0](https://github.com/risc0/risc0)
   - output: the journal of the Risc0 zkVM output
-  - proofBytes: 0x01 + the seal of the Risc0 zkVM output
+  - zkCoprocessor: 1
+  - proofBytes: the seal of the Risc0 zkVM output
 
 * [SP1](https://github.com/succinctlabs/sp1)
   - output: the execution result of the SP1 Prover output
-  - proofBytes: 0x02 + the proof of the SP1 Prover output
+  - zkCoprocessor: 2
+  - proofBytes: the proof of the SP1 Prover output
 
-The on-chain verification contract has been deployed to Automata Testnet at [0x322C8c8E80369ae9e8B2BbdEEDc798e3F16A2094](https://explorer-testnet.ata.network/address/0x322C8c8E80369ae9e8B2BbdEEDc798e3F16A2094).
+The on-chain verification contract has been deployed to Automata Testnet at [0x6D67Ae70d99A4CcE500De44628BCB4DaCfc1A145](https://explorer-testnet.ata.network/address/0x6D67Ae70d99A4CcE500De44628BCB4DaCfc1A145).
+
+The [ImageID](https://dev.risczero.com/terminology#image-id) currently used for the DCAP RiscZero Guest Program is `83613a8beec226d1f29714530f1df791fa16c2c4dfcf22c50ab7edac59ca637f`.
+
+The [VKEY](https://docs.succinct.xyz/verification/onchain/solidity-sdk.html?#finding-your-program-vkey) currently used for the DCAP SP1 Program is
+`0043e4e0c286cf4a2c03472ca2384f35a008558bc5de4e0f39d1d1bc989badca`.
+
+An useful DCAP zkVM clis can be found at [Automata DCAP zkVM CLI](https://github.com/automata-network/automata-dcap-zkvm-cli).
 
 ### Verify Attestation off-chain
 Please follow Intel official DCAP repo [SGXDataCenterAttestationPrimitives](https://github.com/intel/SGXDataCenterAttestationPrimitives) to perform the off-chain verification.
@@ -92,7 +100,6 @@ We would like to acknowledge the projects below whose previous work has been ins
 
 * [Risc0](https://github.com/risc0/risc0): The Risc0 ZK Optimization to reduce the gas cost to verify the Intel TDX Quote on-chain.
 * [SP1](https://github.com/succinctlabs/sp1): The Succinct ZK Optimization to reduce the gas cost to verify the Intel TDX Quote on-chain. It supports Groth16 and Plonk proofs.
-* [Automata DCAP Attestation](https://github.com/automata-network/automata-dcap-attestation): The open-source DCAP attestation smart contracts to verify Intel TDX Quote.
 
 ## Disclaimer
 This project is under development. All source code and features are not production ready.

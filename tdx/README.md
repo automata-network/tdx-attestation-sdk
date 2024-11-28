@@ -90,17 +90,19 @@ function verifyAndAttestOnChain(bytes calldata rawQuote)
 It accepts the raw quote hex string to perform the on-chain verification, all collaterals will be fetched from the [Automata on-chain PCCS](https://github.com/automata-network/automata-on-chain-pccs).
 
 ```solidity
-function verifyAndAttestWithZKProof(bytes calldata output, bytes calldata proofBytes)
+function verifyAndAttestWithZKProof(bytes calldata output, ZkCoProcessorType zkCoprocessor, bytes calldata proofBytes)
 ```
-The first parameter represents the output of the zkVM, while the second one is consist of the ZK type and its corresponding proof. It supports two kinds of ZK technologies to perform the on-chain verification:
+The first parameter represents the output of the zkVM, the second one is the zkVM type, and the third one is its corresponding proof. It supports two kinds of ZK technologies to perform the on-chain verification:
 
 * [Risc0](https://github.com/risc0/risc0)
   - output: the journal of the Risc0 zkVM output
-  - proofBytes: 0x01 + the seal of the Risc0 zkVM output
+  - zkCoprocessor: 1
+  - proofBytes: the seal of the Risc0 zkVM output
 
 * [SP1](https://github.com/succinctlabs/sp1)
   - output: the execution result of the SP1 Prover output
-  - proofBytes: 0x02 + the proof of the SP1 Prover output
+  - zkCoprocessor: 2
+  - proofBytes: the proof of the SP1 Prover output
 
 #### Verify Attestation off-chain
 Please follow Intel official DCAP repo [SGXDataCenterAttestationPrimitives](https://github.com/intel/SGXDataCenterAttestationPrimitives) to perform the off-chain verification.

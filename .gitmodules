@@ -1,3 +1,0 @@
-[submodule "clis/dcap-bonsai-cli"]
-	path = clis/dcap-bonsai-cli
-	url = https://github.com/automata-network/dcap-bonsai-cli.git
