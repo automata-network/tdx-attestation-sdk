@@ -25,7 +25,7 @@ cargo prove build
 ### Execute the Program and Generate the Proof
 
 > [!WARNING]
-> You will need at least 128GB RAM to generate a Groth16 or PLONK proof if you want to perform the calculation locally.
+> You will need at least 128 GB of RAM to generate a Groth16 or PLONK proof if you want to perform the calculation locally.
 
 To generate a proof that is small enough to be verified on-chain and verifiable by the EVM:
 
@@ -43,7 +43,7 @@ let proof = client.prove(&pk, stdin.clone()).plonk().run().unwrap();
 These commands will also generate fixtures that can be used to test the verification of SP1 zkVM proofs
 inside Solidity.
 
-Pay attention, if you want to use [Automata DCAP Attestation](https://github.com/automata-network/automata-dcap-attestation) to perform the on-chain verification, we recommend to use [dcap-sp1-cli](/clis/dcap-sp1-cli) to generate the zkVM proofs with the same Verification Key.
+Pay attention, if you want to use [Automata DCAP Attestation](https://github.com/automata-network/automata-dcap-attestation) to perform the on-chain verification, we recommend using [dcap-sp1-cli](/clis/dcap-sp1-cli) to generate the zkVM proofs with the same Verification Key.
 
 ### Retrieve the Verification Key
 
