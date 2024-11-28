@@ -56,7 +56,7 @@ The [VKEY](https://docs.succinct.xyz/verification/onchain/solidity-sdk.html?#fin
 An useful DCAP zkVM clis can be found at [Automata DCAP zkVM CLI](https://github.com/automata-network/automata-dcap-zkvm-cli).
 
 ### Verify Attestation off-chain
-Please follow Intel official DCAP repo [SGXDataCenterAttestationPrimitives](https://github.com/intel/SGXDataCenterAttestationPrimitives) to perform the off-chain verification.
+Please follow the Intel official DCAP repo [SGXDataCenterAttestationPrimitives](https://github.com/intel/SGXDataCenterAttestationPrimitives) to perform the off-chain verification.
 
 ## ZK Optimization
 ### Risc0
