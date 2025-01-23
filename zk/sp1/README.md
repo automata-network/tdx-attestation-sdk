@@ -34,7 +34,7 @@ cd script
 cargo run --release
 ```
 
-This will generate a Groth16 proof. If you want to generate a PLONK proof, try to uncomment the Plonk branch.
+This will generate a Groth16 proof. If you want to generate a PLONK proof, use the `plonk()` method as shown below.
 
 ```rust
 let proof = client.prove(&pk, stdin.clone()).plonk().run().unwrap();
@@ -50,12 +50,12 @@ Pay attention, if you want to use [Automata DCAP Attestation](https://github.com
 To retrieve your `programVKey` for your on-chain contract, run the following command:
 
 ```sh
-cargo prove vkey --elf elf/riscv32im-succinct-zkvm-elf
+cargo prove vkey --elf elf/dcap-sp1-guest-program-elf
 ```
 
 ## Using the Prover Network
 
-We highly recommend using the Succinct prover network for any non-trivial programs or benchmarking purposes. For more information, see the [setup guide](https://docs.succinct.xyz/generating-proofs/prover-network.html).
+We highly recommend using the Succinct prover network for any non-trivial programs or benchmarking purposes. For more information, see the [setup guide](https://docs.succinct.xyz/docs/generating-proofs/prover-network/usage).
 
 To get started, copy the example environment file:
 
@@ -63,12 +63,12 @@ To get started, copy the example environment file:
 cp .env.example .env
 ```
 
-Then, set the `SP1_PROVER` environment variable to `network` and set the `SP1_PRIVATE_KEY`
+Then, set the `SP1_PROVER` environment variable to `network` and set the `NETWORK_PRIVATE_KEY`
 environment variable to your whitelisted private key.
 
 For example, to generate an EVM-compatible proof using the prover network, run the following
 command:
 
 ```sh
-SP1_PROVER=network SP1_PRIVATE_KEY=... cargo run --release
+SP1_PROVER=network NETWORK_PRIVATE_KEY=... cargo run --release
 ```

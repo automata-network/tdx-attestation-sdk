@@ -1,7 +1,7 @@
 use dcap_rs::types::{collaterals::IntelCollateral, VerifiedOutput};
-use sp1_sdk::{utils, HashableKey, ProverClient, SP1Stdin};
+use sp1_sdk::{utils, HashableKey, ProverClient, SP1Stdin, include_elf};
 
-pub const DCAP_ELF: &[u8] = include_bytes!("../../../elf/riscv32im-succinct-zkvm-elf");
+pub const DCAP_ELF: &[u8] = include_elf!("dcap-sp1-guest-program");
 
 fn main() {
     utils::setup_logger();
@@ -45,10 +45,10 @@ fn main() {
     let mut stdin = SP1Stdin::new();
     stdin.write_slice(&input);
 
-    let client = ProverClient::new();
+    let client = ProverClient::from_env();
 
     // Execute the program first
-    let (ret, report) = client.execute(DCAP_ELF, stdin.clone()).run().unwrap();
+    let (ret, report) = client.execute(DCAP_ELF, &stdin).run().unwrap();
     println!(
         "executed program with {} cycles",
         report.total_instruction_count()
@@ -57,8 +57,7 @@ fn main() {
 
     // Generate the proof
     let (pk, vk) = client.setup(DCAP_ELF);
-    let proof = client.prove(&pk, stdin.clone()).groth16().run().unwrap();
-    // let proof = client.prove(&pk, stdin.clone()).plonk().run().unwrap();
+    let proof = client.prove(&pk, &stdin).groth16().run().unwrap();
 
     // Verify proof
     client.verify(&proof, &vk).expect("Failed to verify proof");
