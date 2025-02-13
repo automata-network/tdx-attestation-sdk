@@ -1,0 +1,18 @@
+[package]
+name = "boundless"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# methods = { path = "../methods" }
+risc0-zkvm = { version = "1.2.1" }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde = "1.0"
+hex = "0.4"
+dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git" }
+serde_json = "1.0"
+# pccs-reader-rs = { git = "https://github.com/automata-network/pccs-reader-rs.git", branch = "testnet/latest" }
+
+boundless-market = "0.6"
+tokio = { version = "1.43.0", features = ["full"] }
