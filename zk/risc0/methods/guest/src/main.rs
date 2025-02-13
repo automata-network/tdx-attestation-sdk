@@ -8,9 +8,10 @@ use dcap_rs::types::{
     VerifiedOutput,
 };
 use dcap_rs::utils::cert::{hash_crl_keccak256, hash_x509_keccak256};
-use dcap_rs::utils::hash::keccak256sum;
 use dcap_rs::utils::quotes::version_3::verify_quote_dcapv3;
 use dcap_rs::utils::quotes::version_4::verify_quote_dcapv4;
+use dcap_rs::utils::tcbinfo::{get_tcbinfov2_content_hash, get_tcbinfov3_content_hash};
+use dcap_rs::utils::enclave_identity::get_enclave_identityv2_content_hash;
 
 risc0_zkvm::guest::entry!(main);
 
@@ -30,7 +31,7 @@ fn main() {
         u32::from_le_bytes(input[12..16].try_into().unwrap()) as usize;
 
     // read the variable length fields
-    let mut offset = 16 as usize;
+    let mut offset = 16 as usize; // timestamp + quote_len + collateral_len
     let quote_slice = &input[offset..offset + quote_len];
     offset += quote_len;
     let intel_collaterals_slice = &input[offset..offset + intel_collaterals_bytes_len];
@@ -66,11 +67,27 @@ fn main() {
 
     // write public output to the journal
     let serial_output = verified_output.to_bytes();
-    let tcbinfo_hash = keccak256sum(&intel_collaterals.tcbinfo_bytes.as_ref().unwrap());
-    let qeidentity_hash = keccak256sum(&intel_collaterals.qeidentity_bytes.as_ref().unwrap());
+    
+    let tcb_content_hash = match quote_version {
+        3 => {
+            let tcb_info_v2 = intel_collaterals.get_tcbinfov2();
+            get_tcbinfov2_content_hash(&tcb_info_v2)
+        },
+        4 => {
+            let tcb_info_v3 = intel_collaterals.get_tcbinfov3();
+            get_tcbinfov3_content_hash(&tcb_info_v3)
+        },
+        _ => panic!("Unsupported Quote Version")
+    };
+    
+    let qeidentity = intel_collaterals.get_qeidentityv2();
+    let qeidentity_content_hash = get_enclave_identityv2_content_hash(&qeidentity);
+    
     let sgx_intel_root_ca_cert_hash =
         hash_x509_keccak256(&intel_collaterals.get_sgx_intel_root_ca());
+    
     let sgx_tcb_signing_cert_hash = hash_x509_keccak256(&intel_collaterals.get_sgx_tcb_signing());
+    
     let sgx_intel_root_ca_crl_hash =
         hash_crl_keccak256(&intel_collaterals.get_sgx_intel_root_ca_crl().unwrap());
 
@@ -85,10 +102,10 @@ fn main() {
 
     // the journal output has the following format:
     // serial_output_len (2 bytes)
-    // serial_output (VerifiedOutput) (SGX: 397 bytes, TDX: 597 bytes)
+    // serial_output (VerifiedOutput)
     // current_time (8 bytes)
-    // tcbinfov2_hash
-    // qeidentityv2_hash
+    // tcbinfo_content_hash
+    // qeidentity_content_hash
     // sgx_intel_root_ca_cert_hash
     // sgx_tcb_signing_cert_hash
     // sgx_tcb_intel_root_ca_crl_hash
@@ -100,8 +117,8 @@ fn main() {
     journal_output.extend_from_slice(&output_len.to_be_bytes());
     journal_output.extend_from_slice(&serial_output);
     journal_output.extend_from_slice(&current_time.to_be_bytes());
-    journal_output.extend_from_slice(&tcbinfo_hash);
-    journal_output.extend_from_slice(&qeidentity_hash);
+    journal_output.extend_from_slice(&tcb_content_hash);
+    journal_output.extend_from_slice(&qeidentity_content_hash);
     journal_output.extend_from_slice(&sgx_intel_root_ca_cert_hash);
     journal_output.extend_from_slice(&sgx_tcb_signing_cert_hash);
     journal_output.extend_from_slice(&sgx_intel_root_ca_crl_hash);

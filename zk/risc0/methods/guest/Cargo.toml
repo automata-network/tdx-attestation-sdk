@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 risc0-zkvm = { version = "1.2.1", default-features = false, features = ["std", "unstable"] }
-dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git" }
+dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", branch = "DEV-3793" }
 hex = "0.4"
 chrono = "0.4"
 serde_json = { version = "1.0" }
