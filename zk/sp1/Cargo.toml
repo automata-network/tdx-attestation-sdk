@@ -7,7 +7,7 @@ resolver = "2"
 
 [workspace.dependencies]
 alloy-sol-types = "0.7.7"
-dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git" }
+dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", branch = "development" }
 sp1-sdk = "4.0.1"
 sp1-zkvm = "4.0.1"
 
