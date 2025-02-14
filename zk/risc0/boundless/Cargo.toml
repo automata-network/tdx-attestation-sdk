@@ -12,7 +12,7 @@ serde = "1.0"
 hex = "0.4"
 dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git" }
 serde_json = "1.0"
-# pccs-reader-rs = { git = "https://github.com/automata-network/pccs-reader-rs.git", branch = "testnet/latest" }
-
+pccs-reader-rs = { git = "https://github.com/automata-network/pccs-reader-rs.git", branch = "preston" }
 boundless-market = "0.6"
 tokio = { version = "1.43.0", features = ["full"] }
+anyhow = "1.0.95"
