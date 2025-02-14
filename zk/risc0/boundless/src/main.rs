@@ -3,6 +3,7 @@ use anyhow::{Error, Result};
 use pccs_reader_rs::{find_missing_collaterals_from_quote, MissingCollateral};
 
 use boundless::attestation::IAttestation;
+use boundless::batch::read_batch_quotes;
 use boundless_market::{
     alloy::{
         primitives::{address, utils::parse_ether},
@@ -17,7 +18,7 @@ use risc0_zkvm::{
     compute_image_id, default_executor,
     sha::{Digest, Digestible},
 };
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
 
 pub const TX_TIMEOUT: Duration = Duration::from_secs(30);
 pub const DCAP_GUEST_ELF: &[u8] = include_bytes!(
@@ -38,29 +39,39 @@ async fn main() -> Result<()> {
         .duration_since(std::time::UNIX_EPOCH)?
         .as_secs();
 
-    let quote = hex::decode(include_str!("../data/quote.hex"))?;
-    let ret = find_missing_collaterals_from_quote(&quote).await;
-    let serialized_collateral = if let MissingCollateral::None(collaterals) = ret {
-        collaterals
-    } else {
-        return Err(Error::msg(format!("{:?}", ret)));
-    };
+    let quote_batch = read_batch_quotes(PathBuf::from("./data/quotes-0.txt"))?;
 
-    let mut input: Vec<u8> = vec![];
-    let quote_len = quote.len() as u32;
-    let collaterals_len = serialized_collateral.len() as u32;
-    input.extend_from_slice(&current_time.to_le_bytes());
-    input.extend_from_slice(&quote_len.to_le_bytes());
-    input.extend_from_slice(&collaterals_len.to_le_bytes());
-    input.extend_from_slice(&quote);
-    input.extend_from_slice(&serialized_collateral);
+    // specify batch size here
+    let batch_size = 5usize;
 
-    request_proof_then_verify(&input, &image_id).await?;
+    for (i, quote) in quote_batch[..batch_size].iter().enumerate() {
+        println!("Proving quote: {} out of {}", i + 1, batch_size);
+
+        let ret = find_missing_collaterals_from_quote(&quote).await;
+        let serialized_collateral = if let MissingCollateral::None(collaterals) = ret {
+            collaterals
+        } else {
+            return Err(Error::msg(format!("{:?}", ret)));
+        };
+
+        let mut input: Vec<u8> = vec![];
+        let quote_len = quote.len() as u32;
+        let collaterals_len = serialized_collateral.len() as u32;
+        input.extend_from_slice(&current_time.to_le_bytes());
+        input.extend_from_slice(&quote_len.to_le_bytes());
+        input.extend_from_slice(&collaterals_len.to_le_bytes());
+        input.extend_from_slice(&quote);
+        input.extend_from_slice(&serialized_collateral);
+
+        let tx_hash = request_proof_then_verify(&input, &image_id).await?;
+
+        println!("Successfully verified proof {}, tx: {}", i + 1, tx_hash);
+    }
 
     Ok(())
 }
 
-async fn request_proof_then_verify(input: &[u8], image_id: &Digest) -> Result<()> {
+async fn request_proof_then_verify(input: &[u8], image_id: &Digest) -> Result<String> {
     let rpc_url = std::env::var("SEPOLIA_URL")?.parse()?;
     let boundless_market_address = address!("69c7943DA0D7e45D44Bd0cE7a2412DCdAe423788");
     let set_verifier_address = address!("Ef0A93B2310d52358F1eCA0C946aD7D25596e7dd");
@@ -157,7 +168,5 @@ async fn request_proof_then_verify(input: &[u8], image_id: &Digest) -> Result<()
         .await
         .expect("failed to confirm tx");
 
-    println!("Tx hash: {}", tx_hash.to_string());
-
-    Ok(())
+    Ok(tx_hash.to_string())
 }
