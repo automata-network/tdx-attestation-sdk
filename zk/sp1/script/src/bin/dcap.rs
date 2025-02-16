@@ -26,7 +26,7 @@ fn main() {
     //     .duration_since(std::time::UNIX_EPOCH)
     //     .unwrap()
     //     .as_secs();
-    let current_time = 1729209600u64;
+    let current_time = 1739589300u64;
     let current_time_bytes = current_time.to_le_bytes();
 
     // ZL: perform a simple serialization of the inputs
