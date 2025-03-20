@@ -4,6 +4,5 @@ name = "dcap-sp1-guest-program"
 edition = "2021"
 
 [dependencies]
-alloy-sol-types.workspace = true
 dcap-rs.workspace = true
 sp1-zkvm.workspace = true
