@@ -20,7 +20,7 @@ homepage = "https://www.ata.network/"
 license = "Apache-2.0"
 
 [workspace.dependencies]
-dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", branch = "development" }
+dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git" }
 
 base64-url = "3.0.0"
 bincode = "1.3.3"

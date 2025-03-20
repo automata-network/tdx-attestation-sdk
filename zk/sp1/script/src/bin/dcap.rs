@@ -57,7 +57,8 @@ fn main() {
 
     // Generate the proof
     let (pk, vk) = client.setup(DCAP_ELF);
-    let proof = client.prove(&pk, &stdin).groth16().run().unwrap();
+    // let proof = client.prove(&pk, &stdin).groth16().run().unwrap();
+    let proof = client.prove(&pk, &stdin).plonk().run().unwrap();
 
     // Verify proof
     client.verify(&proof, &vk).expect("Failed to verify proof");

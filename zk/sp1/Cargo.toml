@@ -6,7 +6,7 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", branch = "development" }
+dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git" }
 sp1-sdk = { version = "^4.1.0" }
 sp1-zkvm = { version = "^4.1.0" }
 
