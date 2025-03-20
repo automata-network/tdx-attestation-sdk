@@ -46,12 +46,12 @@ The first parameter represents the output of the zkVM, the second one is the zkV
   - zkCoprocessor: 2
   - proofBytes: the proof of the SP1 Prover output
 
-The on-chain verification contract has been deployed to Automata Testnet at [0x6D67Ae70d99A4CcE500De44628BCB4DaCfc1A145](https://explorer-testnet.ata.network/address/0x6D67Ae70d99A4CcE500De44628BCB4DaCfc1A145).
+The on-chain verification contract has been deployed to Automata Testnet at [0x95175096a9B74165BE0ac84260cc14Fc1c0EF5FF](https://explorer-testnet.ata.network/address/0x95175096a9B74165BE0ac84260cc14Fc1c0EF5FF).
 
-The [ImageID](https://dev.risczero.com/terminology#image-id) currently used for the DCAP RiscZero Guest Program is `c2eafe1ba01610f3b71281f9dd3280b33d97370bb68d3ada2925d391be245e10`.
+The [ImageID](https://dev.risczero.com/terminology#image-id) currently used for the DCAP RiscZero Guest Program is `d6c3b4b08fa163dd44f89125f97223f6f7163e3f0f62e360d707adab8f6b7799`.
 
 The [VKEY](https://docs.succinct.xyz/verification/onchain/solidity-sdk.html?#finding-your-program-vkey) currently used for the DCAP SP1 Program is
-`004be684aaf90b70fb2d8f586ec96c36cee5f6533850b14e8b5568f4dbf31f8e`.
+`0036efd519bb371b29a40322e40031833716e9441c6907f8aefc5e52ceebc9a6`.
 
 An useful DCAP zkVM clis can be found at [Automata DCAP zkVM CLI](https://github.com/automata-network/automata-dcap-zkvm-cli).
 
