@@ -57,8 +57,8 @@ fn main() {
 
     // Generate the proof
     let (pk, vk) = client.setup(DCAP_ELF);
-    // let proof = client.prove(&pk, &stdin).groth16().run().unwrap();
-    let proof = client.prove(&pk, &stdin).plonk().run().unwrap();
+    let proof = client.prove(&pk, &stdin).groth16().run().unwrap();
+    // let proof = client.prove(&pk, &stdin).plonk().run().unwrap();
 
     // Verify proof
     client.verify(&proof, &vk).expect("Failed to verify proof");
@@ -69,13 +69,16 @@ fn main() {
     let mut output = Vec::with_capacity(output_len);
     output.extend_from_slice(&ret_slice[2..2 + output_len]);
 
+    let proof_bytes = proof.bytes();
+
     println!("Execution Output: {}", hex::encode(ret_slice));
     println!(
         "Proof pub value: {}",
         hex::encode(proof.public_values.as_slice())
     );
     println!("VK: {}", vk.bytes32().to_string().as_str());
-    println!("Proof: {}", hex::encode(proof.bytes()));
+    println!("Proof: {}", hex::encode(&proof_bytes));
+    println!("Proof selector: {}", hex::encode(&proof_bytes[..4]));
 
     let parsed_output = VerifiedOutput::from_bytes(&output);
     println!("{:?}", parsed_output);

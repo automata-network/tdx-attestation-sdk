@@ -18,5 +18,5 @@ tracing = "0.1.40"
 hex = "0.4.3"
 
 [build-dependencies]
-sp1-build = "^4.1.0"
+sp1-build = "^5.0.0"
 sp1-sdk.workspace = true
