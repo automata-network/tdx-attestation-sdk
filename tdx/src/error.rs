@@ -21,7 +21,19 @@ pub enum TdxError {
 
 impl Display for TdxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
+        match self {
+            TdxError::Anyhow(err) => write!(f, "Anyhow: {}", err),
+            TdxError::ConfigOptions(err) => write!(f, "ConfigOptions: {}", err),
+            TdxError::Cpu(err) => write!(f, "Cpu: {}", err),
+            TdxError::Dcap(err) => write!(f, "Dcap: {}", err),
+            TdxError::Firmware(err) => write!(f, "Firmware: {}", err),
+            TdxError::Http(err) => write!(f, "Http: {}", err),
+            TdxError::IO(err) => write!(f, "IO: {}", err),
+            TdxError::SSL(err) => write!(f, "SSL: {}", err),
+            TdxError::Tpm(err) => write!(f, "Tpm: {}", err),
+            TdxError::X509(err) => write!(f, "X509: {}", err),
+            TdxError::Unknown => write!(f, "Unknown"),
+        }
     }
 }
 
