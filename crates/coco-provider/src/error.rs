@@ -13,7 +13,13 @@ pub enum CocoError {
 
 impl Display for CocoError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
+        match self {
+            CocoError::Firmware(err) => write!(f, "Firmware: {}", err),
+            CocoError::IO(err) => write!(f, "IO: {}", err),
+            CocoError::Permission(err) => write!(f, "Permission: {}", err),
+            CocoError::Tpm(err) => write!(f, "Tpm: {}", err),
+            CocoError::Unknown => write!(f, "Unknown"),
+        }
     }
 }
 
