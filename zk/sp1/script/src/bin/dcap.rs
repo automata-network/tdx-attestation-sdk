@@ -14,9 +14,9 @@ fn main() {
     intel_collaterals.set_intel_root_ca_der(include_bytes!(
         "../../data/Intel_SGX_Provisioning_Certification_RootCA.cer"
     ));
-    intel_collaterals.set_sgx_tcb_signing_pem(include_bytes!("../../data/signing_cert.pem"));
+    intel_collaterals.set_sgx_tcb_signing_der(include_bytes!("../../data/signing_cert.der"));
     intel_collaterals
-        .set_sgx_intel_root_ca_crl_der(include_bytes!("../../data/intel_root_ca_crl.der"));
+        .set_sgx_intel_root_ca_crl_der(include_bytes!("../../data/intel_root_crl.der"));
     intel_collaterals.set_sgx_platform_crl_der(include_bytes!("../../data/pck_platform_crl.der"));
 
     let intel_collaterals_bytes = intel_collaterals.to_bytes();
@@ -26,7 +26,7 @@ fn main() {
     //     .duration_since(std::time::UNIX_EPOCH)
     //     .unwrap()
     //     .as_secs();
-    let current_time = 1739589300u64;
+    let current_time = 1749095100u64;
     let current_time_bytes = current_time.to_le_bytes();
 
     // ZL: perform a simple serialization of the inputs
