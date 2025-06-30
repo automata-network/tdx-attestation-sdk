@@ -751,6 +751,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
 
 [[package]]
+name = "core"
+version = "0.1.0"
+dependencies = [
+ "dcap-rs",
+ "serde",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -842,11 +850,10 @@ name = "dcap_guest"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "core",
  "dcap-rs",
  "hex",
  "risc0-zkvm",
- "serde",
- "serde_json",
 ]
 
 [[package]]

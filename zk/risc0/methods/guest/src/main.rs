@@ -1,22 +1,14 @@
 #![no_main]
 
-use std::time::{Duration, SystemTime};
+use risc0_zkvm::guest::env;
+risc0_zkvm::guest::entry!(main);
 
+use core::GuestInput;
+use std::time::{Duration, SystemTime};
 use dcap_rs::{
     types::{collateral::Collateral, quote::Quote},
     verify_dcap_quote,
 };
-use risc0_zkvm::guest::env::{self};
-use serde::{Deserialize, Serialize};
-
-risc0_zkvm::guest::entry!(main);
-
-#[derive(Serialize, Deserialize)]
-struct GuestInput {
-    collateral: Collateral,
-    raw_quote: Vec<u8>,
-    timestamp: u64,
-}
 
 fn main() {
     // read the values passed from host

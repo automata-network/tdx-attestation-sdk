@@ -1,0 +1,8 @@
+[package]
+name = "core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+dcap-rs = { workspace = true }
+serde = { workspace = true }
