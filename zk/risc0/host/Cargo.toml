@@ -9,5 +9,5 @@ risc0-zkvm = { version = "^2.1.0" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 core = { path = "../core" }
 dcap-rs = { workspace = true }
-serde = { workspace = true }
+serde_json = { version = "1.0.125", features = ["raw_value"] }
 hex = "0.4"

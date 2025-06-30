@@ -13,4 +13,3 @@ lto = true
 [workspace.dependencies]
 # dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", branch = "DEV-4146/v5" }
 dcap-rs = { path = "/Users/prestonong/Desktop/work/dcap-rs" }
-serde = { version = "1.0", features = ["derive"] }

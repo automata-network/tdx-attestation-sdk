@@ -854,6 +854,7 @@ dependencies = [
  "dcap-rs",
  "hex",
  "risc0-zkvm",
+ "serde_json",
 ]
 
 [[package]]

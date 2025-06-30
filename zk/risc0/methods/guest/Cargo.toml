@@ -12,6 +12,7 @@ dcap-rs = { path = "/Users/prestonong/Desktop/work/dcap-rs" }
 core = { path = "../../core" }
 hex = "0.4"
 chrono = "0.4"
+serde_json = { version = "1.0.125", features = ["raw_value"] }
 
 [patch.crates-io]
 sha2 = { git = "https://github.com/risc0/RustCrypto-hashes", tag = "sha2-v0.10.8-risczero.0" }

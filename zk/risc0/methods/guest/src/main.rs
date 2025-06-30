@@ -12,7 +12,8 @@ use dcap_rs::{
 
 fn main() {
     // read the values passed from host
-    let input: GuestInput = env::read();
+    let input_json: String = env::read();
+    let input = serde_json::from_str::<GuestInput>(input_json.as_str()).unwrap();
     let quote = Quote::read(&mut input.raw_quote.as_slice()).unwrap();
     let current_time = SystemTime::UNIX_EPOCH + Duration::from_secs(input.timestamp);
 
