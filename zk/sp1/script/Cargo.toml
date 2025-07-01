@@ -9,10 +9,10 @@ name = "dcap"
 path = "src/bin/dcap.rs"
 
 [dependencies]
+core = { path = "../core" }
 dcap-rs = { workspace = true }
 sp1-sdk = { workspace = true }
-serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
-serde = { version = "1.0", default-features = false, features = ["derive"] }
+serde_json = { workspace = true }
 clap = { version = "4.0", features = ["derive", "env"] }
 tracing = "0.1.40"
 hex = "0.4.3"

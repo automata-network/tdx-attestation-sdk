@@ -7,14 +7,14 @@ pub const DCAP_ELF: &[u8] = include_elf!("dcap-sp1-guest-program");
 fn main() {
     utils::setup_logger();
 
-    let raw_quote = include_bytes!("../data/quote.dat");
+    let raw_quote = include_bytes!("../../data/quote.dat");
 
     let collateral = Collateral::new(
-        include_bytes!("../data/intel_root_crl.der"),
-        include_bytes!("../data/pck_platform_crl.der"),
-        include_bytes!("../data/signing_cert.pem"),
-        include_str!("../data/tcbinfo-tdx-v3.json"),
-        include_str!("../data/identity_tdx.json"),
+        include_bytes!("../../data/intel_root_crl.der"),
+        include_bytes!("../../data/pck_platform_crl.der"),
+        include_bytes!("../../data/signing_cert.pem"),
+        include_str!("../../data/tcbinfo-tdx-v3.json"),
+        include_str!("../../data/identity_tdx.json"),
     )
     .unwrap();
 
