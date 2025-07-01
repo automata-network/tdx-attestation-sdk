@@ -35,6 +35,12 @@ First, install Rust, and select the default toolchain as nightly.
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source "$HOME/.cargo/env"
 ```
+To get a quick introduction on how to fetch the FMSPC in your TDX machine, we have an example at `examples/fmspc.rs`. To run the example:
+```bash
+cargo build --example fmspc
+sudo ./target/debug/examples/fmspc
+```
+The example should successfully generate an attestation report on any TDX enabled virtual machine and display the corresponding FMSPC on stdout.
 
 To get a quick introduction on how to generate and verify an attestation report, we have an example at `examples/attestation.rs`. To run the example:
 ```bash
