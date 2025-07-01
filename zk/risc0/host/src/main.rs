@@ -49,8 +49,6 @@ fn main() {
         .build()
         .unwrap();
 
-    println!("input_string: {}", input_string);
-
     // Obtain the default prover.
     let prover = default_prover();
     // Produce a receipt by proving the specified ELF binary.
