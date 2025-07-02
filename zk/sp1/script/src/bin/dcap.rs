@@ -1,4 +1,5 @@
 use dcap_rs::types::collateral::Collateral;
+use dcap_rs::types::VerifiedOutput;
 use core::GuestInput;
 use sp1_sdk::{utils, HashableKey, ProverClient, SP1Stdin, include_elf};
 
@@ -68,8 +69,8 @@ fn main() {
     println!("Proof: {}", hex::encode(&proof_bytes));
     println!("Proof selector: {}", hex::encode(&proof_bytes[..4]));
 
-    // let parsed_output = VerifiedOutput::from_bytes(&output);
-    // println!("{:?}", parsed_output);
+    let parsed_output = VerifiedOutput::from_bytes(&output);
+    println!("{:?}", parsed_output);
 
     // Verify proof
     client.verify(&proof, &vk).expect("Failed to verify proof");

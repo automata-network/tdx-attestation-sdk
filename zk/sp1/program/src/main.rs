@@ -18,8 +18,8 @@ pub fn main() {
     let collaterals = &input.collateral;
 
     // Pre-process the output
-    let tcb_content_hash = collaterals.tcb_info.get_tcb_info().unwrap().get_content_hash();
-    let qeidentity_content_hash = collaterals.qe_identity.get_enclave_identity().unwrap().get_content_hash();
+    let tcb_content_hash = collaterals.tcb_info.get_tcb_info().unwrap().get_content_hash().unwrap();
+    let qeidentity_content_hash = collaterals.qe_identity.get_enclave_identity().unwrap().get_content_hash().unwrap();
     let sgx_intel_root_ca_cert_hash = Collateral::get_cert_hash(
         &collaterals.tcb_info_and_qe_identity_issuer_chain[1] // SGX Intel Root CA is the issuer of Intel TCB Signing Cert
     ).unwrap();

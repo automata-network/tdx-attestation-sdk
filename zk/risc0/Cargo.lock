@@ -962,7 +962,7 @@ dependencies = [
 [[package]]
 name = "dcap-rs"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/dcap-rs.git?branch=DEV-4146%2Fv5#191a4aaa7bf4fc7d3044d692a3da2b0f0bdf2817"
+source = "git+https://github.com/automata-network/dcap-rs.git?branch=DEV-4146%2Fv5#9851136532b95d17a54f2677653159bcfa582e63"
 dependencies = [
  "alloy-sol-types",
  "anyhow",

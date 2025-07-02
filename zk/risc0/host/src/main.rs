@@ -3,8 +3,9 @@
 use methods::{DCAP_GUEST_ELF, DCAP_GUEST_ID};
 use risc0_zkvm::{compute_image_id, default_prover, ExecutorEnv, InnerReceipt, ProverOpts};
 
-use dcap_rs::types::collateral::Collateral;
 use core::GuestInput;
+use dcap_rs::types::collateral::Collateral;
+use dcap_rs::types::VerifiedOutput;
 
 fn main() {
     // Initialize tracing. In order to view logs, run `RUST_LOG=info cargo run`
@@ -76,16 +77,15 @@ fn main() {
     // Optional: Verify receipt to confirm that recipients will also be able to
     // verify your receipt
     receipt.verify(DCAP_GUEST_ID).unwrap();
-    // For example:
-    // let _output: Vec<u8> = receipt.journal.decode().unwrap();
+
     let output = receipt.journal.bytes;
 
     // manually parse the output
     let mut offset: usize = 0;
     let output_len = u16::from_be_bytes(output[offset..offset + 2].try_into().unwrap());
     offset += 2;
-    // let verified_output = VerifiedOutput::from_bytes(&output[offset..offset + output_len as usize]);
-    let verified_output = &output[offset..offset + output_len as usize];
+    let verified_output =
+        VerifiedOutput::from_bytes(&output[offset..offset + output_len as usize]).unwrap();
     offset += output_len as usize;
     let current_time = u64::from_be_bytes(output[offset..offset + 8].try_into().unwrap());
     offset += 8;
