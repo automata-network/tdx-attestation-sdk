@@ -49,6 +49,17 @@ sudo ./target/debug/examples/attestation
 ```
 The example should successfully generate and verify an attestation report on any TDX enabled virtual machine and display the result on stdout.
 
+### Getting Started with Docker
+
+First, install Docker in your machine, then build the docker image with [Dockerfile](../Dockerfile).
+```bash
+docker build -t tdx-attestation .
+```
+The image contains two examples as mentioned in the previous session, and it uses FMSPC as the default entrypoint, you can override it with another when executing the docker container.
+```bash
+sudo docker run --privileged --rm --network host --device=/dev/tpm0 --device=/dev/tpmrm0 -v /sys/kernel/config:/sys/kernel/config  --group-add $(getent group tss | cut -d: -f3) tdx-attestation:latest
+```
+
 ## Rust API Usage
 
 ### Initialize Tdx object
