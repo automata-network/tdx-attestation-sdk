@@ -15,7 +15,7 @@ clib = ["dep:once_cell", "dep:coco-provider", "coco-provider/configfs", "coco-pr
 coco-provider = ["dep:coco-provider"]
 
 [build-dependencies]
-cbindgen = "0.28.0"
+cbindgen = "0.29.0"
 
 [profile.release]
 lto = true

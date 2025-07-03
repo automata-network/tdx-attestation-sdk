@@ -1,7 +1,7 @@
 pub mod device;
 pub mod error;
 pub mod pccs;
-mod utils;
+pub mod utils;
 
 use dcap_rs::types::collaterals::IntelCollateral;
 use dcap_rs::types::quotes::version_4::QuoteV4;
