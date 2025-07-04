@@ -7,12 +7,14 @@ edition = "2021"
 
 [dependencies]
 risc0-zkvm = { version = "^2.1.0", default-features = false, features = ["std", "unstable"] }
-dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", rev="d847b8f75a493640c4881bdf67775250b6baefab" }
+dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", rev = "8b199ed574fbab717e62d4031578632d949c99bb" }
+core = { path = "../../core" }
 hex = "0.4"
 chrono = "0.4"
-serde_json = { version = "1.0" }
+serde_json = { version = "1.0.125", features = ["raw_value"] }
 
 [patch.crates-io]
 sha2 = { git = "https://github.com/risc0/RustCrypto-hashes", tag = "sha2-v0.10.8-risczero.0" }
 crypto-bigint = { git = "https://github.com/risc0/RustCrypto-crypto-bigint", tag = "v0.5.2-risczero.0" }
 p256 = { git = "https://github.com/risc0/RustCrypto-elliptic-curves", tag = "p256/v0.13.2-risczero.1" }
+tiny-keccak = { git = "https://github.com/risc0/tiny-keccak", tag = "tiny-keccak/v2.0.2-risczero.0" }
