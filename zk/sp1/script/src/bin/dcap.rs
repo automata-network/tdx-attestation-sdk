@@ -50,8 +50,8 @@ fn main() {
 
     // Generate the proof
     let (pk, vk) = client.setup(DCAP_ELF);
-    let proof = client.prove(&pk, &stdin).groth16().run().unwrap();
-    // let proof = client.prove(&pk, &stdin).plonk().run().unwrap();
+    // let proof = client.prove(&pk, &stdin).groth16().run().unwrap();
+    let proof = client.prove(&pk, &stdin).plonk().run().unwrap();
 
     let ret_slice = ret.as_slice();
     let output_len = u16::from_be_bytes([ret_slice[0], ret_slice[1]]) as usize;

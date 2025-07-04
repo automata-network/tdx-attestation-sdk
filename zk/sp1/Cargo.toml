@@ -7,7 +7,7 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", branch = "DEV-4146/v5" }
+dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", rev = "8b199ed574fbab717e62d4031578632d949c99bb" }
 sp1-sdk = { version = "^5.0.0" }
 sp1-zkvm = { version = "^5.0.0" }
 serde_json = { version = "1.0.125", features = ["raw_value"] }

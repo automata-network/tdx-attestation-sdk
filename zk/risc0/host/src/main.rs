@@ -83,6 +83,7 @@ fn main() {
     // manually parse the output
     let mut offset: usize = 0;
     let output_len = u16::from_be_bytes(output[offset..offset + 2].try_into().unwrap());
+
     offset += 2;
     let verified_output =
         VerifiedOutput::from_bytes(&output[offset..offset + output_len as usize]).unwrap();

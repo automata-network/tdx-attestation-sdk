@@ -55,19 +55,18 @@ pub fn main() {
     // sgx_tcb_intel_root_ca_crl_hash
     // sgx_pck_crl_hash or sgx_pck_processor_crl_hash
 
-    let journal_len = serial_output.len() + 226;
-    let mut output: Vec<u8> = Vec::with_capacity(journal_len);
+    let mut program_output: Vec<u8> = vec![];
     let output_len: u16 = serial_output.len() as u16;
 
-    output.extend_from_slice(&output_len.to_be_bytes());
-    output.extend_from_slice(&serial_output);
-    output.extend_from_slice(&input.timestamp.to_be_bytes());
-    output.extend_from_slice(&tcb_content_hash);
-    output.extend_from_slice(&qeidentity_content_hash);
-    output.extend_from_slice(&sgx_intel_root_ca_cert_hash);
-    output.extend_from_slice(&sgx_tcb_signing_cert_hash);
-    output.extend_from_slice(&sgx_intel_root_ca_crl_hash);
-    output.extend_from_slice(&sgx_pck_crl_hash);
+    program_output.extend_from_slice(&output_len.to_be_bytes());
+    program_output.extend_from_slice(&serial_output);
+    program_output.extend_from_slice(&input.timestamp.to_be_bytes());
+    program_output.extend_from_slice(&tcb_content_hash);
+    program_output.extend_from_slice(&qeidentity_content_hash);
+    program_output.extend_from_slice(&sgx_intel_root_ca_cert_hash);
+    program_output.extend_from_slice(&sgx_tcb_signing_cert_hash);
+    program_output.extend_from_slice(&sgx_intel_root_ca_crl_hash);
+    program_output.extend_from_slice(&sgx_pck_crl_hash);
 
-    sp1_zkvm::io::commit_slice(&output);
+    sp1_zkvm::io::commit_slice(&program_output);
 }
