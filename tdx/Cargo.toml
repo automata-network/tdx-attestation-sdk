@@ -8,10 +8,10 @@ name = "tdx"
 crate-type = ["rlib", "cdylib"]
 
 [features]
-default = ["dep:coco-provider", "coco-provider/configfs", "coco-provider/tpm"]
+default = ["configfs", "tpm"]
 configfs = ["dep:coco-provider", "coco-provider/configfs"]
 tpm = ["dep:coco-provider", "coco-provider/tpm"]
-clib = ["dep:once_cell", "dep:coco-provider", "coco-provider/configfs", "coco-provider/tpm"]
+clib = ["dep:once_cell", "configfs", "tpm"]
 coco-provider = ["dep:coco-provider"]
 
 [build-dependencies]

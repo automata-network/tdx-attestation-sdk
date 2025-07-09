@@ -6,7 +6,7 @@ edition = "2021"
 [workspace]
 
 [dependencies]
-risc0-zkvm = { version = "^2.1.0", default-features = false, features = ["std", "unstable"] }
+risc0-zkvm = { version = "^2.2.0", default-features = false, features = ["std", "unstable"] }
 dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", rev = "8b199ed574fbab717e62d4031578632d949c99bb" }
 core = { path = "../../core" }
 hex = "0.4"
