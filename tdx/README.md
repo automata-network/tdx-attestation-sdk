@@ -45,7 +45,7 @@ The example should successfully generate and verify an attestation report on any
 
 ### Getting Started with Docker
 
-First, install Docker in your machine, then build the docker image with [Dockerfile](../Dockerfile).
+First, install Docker in your machine, then build the docker image with [Dockerfile](../Dockerfile), or use our pre-built docker images at [packages](https://github.com/automata-network/tdx-attestation-sdk/pkgs/container/tdx-attestation-sdk).
 ```bash
 docker build -t tdx-attestation .
 ```
