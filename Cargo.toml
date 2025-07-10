@@ -31,3 +31,4 @@ anyhow = "1.0.97"
 chrono = "0.4.40"
 tokio = { version = "1.44.1", features = ["rt-multi-thread"] }
 x509-parser = "0.15.1"
+clap = { version = "4.0", features = ["derive", "env"] }

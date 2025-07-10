@@ -25,9 +25,10 @@ WORKDIR /app
 # Copy the project files
 COPY . .
 
-# Build the attestation and fmspc example
+# Build the attestation, fmspc and inspect example
 RUN cargo build --example attestation
 RUN cargo build --example fmspc
+RUN cargo build --example inspect
 
 # Set the entrypoint to run the fmspc example
 ENTRYPOINT ["./target/debug/examples/fmspc"]

@@ -39,7 +39,7 @@ pub fn get_pck_fmspc_and_issuer(quote: &QuoteV4) -> (String, CA) {
     (fmspc, pck_ca)
 }
 
-fn extract_fmspc_from_extension<'a>(cert: &'a X509Certificate<'a>) -> [u8; 6] {
+pub fn extract_fmspc_from_extension<'a>(cert: &'a X509Certificate<'a>) -> [u8; 6] {
     let sgx_extensions_bytes = cert
         .get_extension_unique(&oid!(1.2.840 .113741 .1 .13 .1))
         .unwrap()

@@ -35,12 +35,6 @@ First, install Rust, and select the default toolchain as nightly.
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source "$HOME/.cargo/env"
 ```
-To get a quick introduction on how to fetch the FMSPC in your TDX machine, we have an example at `examples/fmspc.rs`. To run the example:
-```bash
-cargo build --example fmspc
-sudo ./target/debug/examples/fmspc
-```
-The example should successfully generate an attestation report on any TDX enabled virtual machine and display the corresponding FMSPC on stdout.
 
 To get a quick introduction on how to generate and verify an attestation report, we have an example at `examples/attestation.rs`. To run the example:
 ```bash
@@ -55,7 +49,7 @@ First, install Docker in your machine, then build the docker image with [Dockerf
 ```bash
 docker build -t tdx-attestation .
 ```
-The image contains two examples as mentioned in the previous session, and it uses FMSPC as the default entrypoint, you can override it with another when executing the docker container.
+The image contains three examples as mentioned in the previous session, and it uses FMSPC as the default entrypoint, you can override it with another when executing the docker container by using `--entrypoint <sample binary>`.
 ```bash
 sudo docker run --privileged --rm --network host --device=/dev/tpm0 --device=/dev/tpmrm0 -v /sys/kernel/config:/sys/kernel/config  --group-add $(getent group tss | cut -d: -f3) tdx-attestation:latest
 ```
@@ -123,3 +117,22 @@ The first parameter represents the output of the zkVM, the second one is the zkV
 
 #### Verify Attestation off-chain
 Please follow Intel official DCAP repo [SGXDataCenterAttestationPrimitives](https://github.com/intel/SGXDataCenterAttestationPrimitives) to perform the off-chain verification.
+
+## Debug tools
+
+* `attestation`: It generates and verifies an attestation report on any TDX enabled virtual machine.
+  ```bash
+  cargo build --example attestation
+  sudo ./target/debug/examples/attestation
+  ```
+* `fmspc`: It fetches the FMSPC in any TDX enabled virtual machine.
+  ```bash
+  cargo build --example fmspc
+  sudo ./target/debug/examples/fmspc
+  ```
+* `inspect`: Given a SGX / TDX DCAP quote, it analyses the FMSPC, platform and version and prints them on stdout.
+  ```bash
+  cargo build --example inspect
+  sudo ./target/debug/examples/inspect --report tdx/examples/testdata/tdx_v4_quote.bin
+  sudo ./target/debug/examples/inspect --report tdx/examples/testdata/sgx_v3_quote.bin
+  ```

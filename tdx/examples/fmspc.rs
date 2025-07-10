@@ -11,4 +11,10 @@ fn main() {
 
     let (fmspc, _) = get_pck_fmspc_and_issuer(&report);
     println!("FMSPC: {:?}", fmspc.to_uppercase());
+    if report.header.tee_type == 0 {
+        println!("Platform: SGX");
+    } else {
+        println!("Platform: TDX");
+    }
+    println!("Version: {}", report.header.version);
 }
