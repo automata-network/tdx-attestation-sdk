@@ -21,7 +21,7 @@ The following cloud service providers (CSP) have support for Intel TDX:
 - If you wish to use a CSP that is not listed above or run your own host, please ensure that the CSP or host is running the following specs:
   - Linux Kernel >= 6.7
   - Virtual Machine (VM) runs under KVM hypervisor 
-  - VM has access to `/sys/kernel/config/tsm/report` and able to create a temporary directory with sudo (eg. `sudo mkdir /sys/kernel/config/tsm/report/testing123`).
+  - VM has access to `/sys/kernel/config/tsm/report` and is able to create a temporary directory with sudo (eg. `sudo mkdir /sys/kernel/config/tsm/report/testing123`).
 > If you receive the error `mkdir: cannot create directory ‘testing123’: No such device or address`, it means that ConfigFS is not supported on your VM.
 
 ### Download Dependencies
