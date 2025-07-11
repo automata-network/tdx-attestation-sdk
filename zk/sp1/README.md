@@ -10,8 +10,7 @@ Leveraging from the [SP1](https://github.com/succinctlabs/sp1) project template,
 
 ## Running the Project
 
-There are four main steps to run this project: build a program, execute a program, generate a core proof, and
-generate an EVM-compatible proof.
+There are four main steps to run this project: build a program, execute a program, generate a core proof, and generate an EVM-compatible proof.
 
 ### Build the Program
 

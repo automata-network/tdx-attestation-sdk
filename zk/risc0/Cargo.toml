@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["host", "methods"]
+members = [ "core","host", "methods"]
 
 # Always optimize; building and running the guest takes much longer without optimization.
 [profile.dev]
@@ -9,3 +9,6 @@ opt-level = 3
 [profile.release]
 debug = 1
 lto = true
+
+[workspace.dependencies]
+dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", rev = "8b199ed574fbab717e62d4031578632d949c99bb" }
