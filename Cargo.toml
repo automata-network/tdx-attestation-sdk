@@ -26,7 +26,7 @@ hex = "0.4.3"
 rand = "0.8.5"
 serde = "1.0.217"
 ureq = { version = "2.12.1", features = ["json"] }
-alloy = "0.12.5"
+alloy = "1.0.20"
 anyhow = "1.0.97"
 chrono = "0.4.40"
 tokio = { version = "1.44.1", features = ["rt-multi-thread"] }
