@@ -1,11 +1,9 @@
+use crate::error::{Result, TdxError};
 use crate::CA;
-use dcap_rs::types::quotes::version_4::QuoteV4;
-use dcap_rs::types::quotes::QeReportCertData;
-use dcap_rs::utils::cert::{get_x509_issuer_cn, parse_certchain, parse_pem};
+use dcap_rs::{types::quote::Quote, utils::cert_chain_processor};
 use rand::RngCore;
 use x509_parser::oid_registry::asn1_rs::{oid, FromDer, OctetString, Oid, Sequence};
-use x509_parser::prelude::*;
-
+use x509_parser::prelude::{parse_x509_pem, X509Certificate};
 /// Generates 64 bytes of random data
 /// Always guaranted to return something (ie, unwrap() can be safely called)
 pub fn generate_random_data() -> Option<[u8; 64]> {
@@ -14,18 +12,30 @@ pub fn generate_random_data() -> Option<[u8; 64]> {
     Some(data)
 }
 
-pub fn get_pck_fmspc_and_issuer(quote: &QuoteV4) -> (String, CA) {
-    let raw_cert_data = QeReportCertData::from_bytes(&quote.signature.qe_cert_data.cert_data);
+pub fn der_to_pem_bytes(der_bytes: &[u8]) -> Vec<u8> {
+    let pem_struct = pem::Pem::new("CERTIFICATE".to_string(), der_bytes.to_vec());
+    pem::encode(&pem_struct).into_bytes()
+}
 
-    let pem = parse_pem(&raw_cert_data.qe_cert_data.cert_data).expect("Failed to parse cert data");
-    // Cert Chain:
-    // [0]: pck ->
-    // [1]: pck ca ->
-    // [2]: root ca
-    let cert_chain = parse_certchain(&pem);
-    let pck = &cert_chain[0];
+pub fn get_pck_fmspc_and_issuer(quote: &Quote) -> Result<(String, CA)> {
+    let raw_cert_data = &quote.signature.cert_data.cert_data;
 
-    let pck_issuer = get_x509_issuer_cn(pck);
+    // // Cert Chain:
+    // // [0]: pck ->
+    // // [1]: pck ca ->
+    // // [2]: root ca
+    let ranges = cert_chain_processor::find_certificate_ranges(raw_cert_data);
+    if ranges.is_empty() {
+        return Err(TdxError::Dcap("No certificates found".to_string()));
+    }
+    let (pck_start, pck_end) = ranges[0];
+    let (_, pem_struct) = parse_x509_pem(&raw_cert_data[pck_start..pck_end])
+        .map_err(|e| TdxError::X509(format!("x509_parser error: {e}")))?;
+    let pck = pem_struct
+        .parse_x509()
+        .map_err(|e| TdxError::X509(format!("x509 error: {e}")))?;
+
+    let pck_issuer = get_x509_issuer_cn(&pck);
 
     let pck_ca = match pck_issuer.as_str() {
         "Intel SGX PCK Platform CA" => CA::PLATFORM,
@@ -33,13 +43,19 @@ pub fn get_pck_fmspc_and_issuer(quote: &QuoteV4) -> (String, CA) {
         _ => panic!("Unknown PCK Issuer"),
     };
 
-    let fmspc_slice = extract_fmspc_from_extension(pck);
+    let fmspc_slice = extract_fmspc_from_extension(&pck);
     let fmspc = hex::encode(fmspc_slice);
 
-    (fmspc, pck_ca)
+    Ok((fmspc, pck_ca))
 }
 
-pub fn extract_fmspc_from_extension<'a>(cert: &'a X509Certificate<'a>) -> [u8; 6] {
+fn get_x509_issuer_cn<'a>(cert: &'a X509Certificate<'a>) -> String {
+    let issuer = cert.issuer();
+    let cn = issuer.iter_common_name().next().unwrap();
+    cn.as_str().unwrap().to_string()
+}
+
+fn extract_fmspc_from_extension<'a>(cert: &'a X509Certificate<'a>) -> [u8; 6] {
     let sgx_extensions_bytes = cert
         .get_extension_unique(&oid!(1.2.840 .113741 .1 .13 .1))
         .unwrap()

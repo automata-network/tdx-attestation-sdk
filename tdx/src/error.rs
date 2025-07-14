@@ -74,3 +74,9 @@ impl From<anyhow::Error> for TdxError {
         TdxError::Anyhow(err.to_string())
     }
 }
+
+impl From<std::str::Utf8Error> for TdxError {
+    fn from(err: std::str::Utf8Error) -> Self {
+        TdxError::IO(format!("{:?}", err))
+    }
+}

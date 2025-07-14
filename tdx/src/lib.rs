@@ -3,46 +3,24 @@ pub mod error;
 pub mod pccs;
 pub mod utils;
 
-use dcap_rs::types::collaterals::IntelCollateral;
-use dcap_rs::types::quotes::version_4::QuoteV4;
-use dcap_rs::utils::quotes::version_4::verify_quote_dcapv4;
+use dcap_rs::types::collateral::Collateral;
+use dcap_rs::types::quote::Quote;
+use dcap_rs::verify_dcap_quote;
 use error::{Result, TdxError};
 use pccs::enclave_id::get_enclave_identity;
 use pccs::fmspc_tcb::get_tcb_info;
 use pccs::pcs::{get_certificate_by_id, IPCSDao::CA};
-use std::panic;
+use std::time::SystemTime;
 use tokio::runtime::Runtime;
 use utils::get_pck_fmspc_and_issuer;
+
+use crate::utils::der_to_pem_bytes;
 
 pub struct Tdx;
 
 impl Tdx {
     pub fn new() -> Self {
         Tdx
-    }
-
-    /// Retrieve an Attestation Report.
-    ///
-    /// Returns:
-    /// - A tuple containing the attestation report and the optional var data.
-    /// - The attestation report is a `QuoteV4` struct.
-    /// - The var data is an optional `Vec<u8>` containing the var data.
-    /// Var data is only available if the device resides on an Azure Confidential VM.
-    /// Var data provided by Azure can be used to verify the contents of the attestation report's report_data
-    pub fn get_attestation_report(&self) -> Result<(QuoteV4, Option<Vec<u8>>)> {
-        let device = device::Device::default()?;
-        device.get_attestation_report()
-    }
-
-    /// Retrieve an Attestation Report with options.
-    /// When available, users can pass in a 64 byte report data when requesting an attestation report.
-    /// This cannot be used on Azure Confidential VM.
-    pub fn get_attestation_report_with_options(
-        &self,
-        options: device::DeviceOptions,
-    ) -> Result<(QuoteV4, Option<Vec<u8>>)> {
-        let device = device::Device::new(options)?;
-        device.get_attestation_report()
     }
 
     /// Retrieve an Attestation Report in raw bytes.
@@ -69,8 +47,14 @@ impl Tdx {
         device.get_attestation_report_raw()
     }
 
+    pub fn verify_attestation_report_raw(&self, report: &mut &[u8]) -> Result<()> {
+        let quote = Quote::read(report)?;
+        self.verify_attestation_report(quote)?;
+        Ok(())
+    }
+
     /// This function verifies the chain of trust for the attestation report.
-    pub fn verify_attestation_report(&self, report: &QuoteV4) -> Result<()> {
+    pub fn verify_attestation_report(&self, report: Quote) -> Result<()> {
         // First retrieve all the required collaterals.
         let rt = Runtime::new().unwrap();
         let (root_ca, root_ca_crl) = rt.block_on(get_certificate_by_id(CA::ROOT))?;
@@ -78,49 +62,41 @@ impl Tdx {
             return Err(TdxError::Http("Root CA or CRL is empty".to_string()));
         }
 
-        let (fmspc, pck_type) = get_pck_fmspc_and_issuer(report);
+        let (fmspc, pck_type) = get_pck_fmspc_and_issuer(&report)?;
         // tcb_type: 0: SGX, 1: TDX
         // version: TDX uses TcbInfoV3
         let tcb_info = rt.block_on(get_tcb_info(1, &fmspc, 3))?;
 
         let quote_version = report.header.version;
-        let qe_identity = rt.block_on(get_enclave_identity(quote_version as u32))?;
+        let qe_identity = rt.block_on(get_enclave_identity(quote_version.get() as u32))?;
 
         let (signing_ca, _) = rt.block_on(get_certificate_by_id(CA::SIGNING))?;
         if signing_ca.is_empty() {
-            return Err(TdxError::Http("Signing CA is empty".to_string()));
+            return Err(TdxError::Http("TCB Signing CA is empty".to_string()));
         }
+        let signing_ca_pem = der_to_pem_bytes(&signing_ca);
+        let root_ca_pem = der_to_pem_bytes(&root_ca);
+        let combined_pem = [signing_ca_pem, root_ca_pem].concat();
 
         let (_, pck_crl) = rt.block_on(get_certificate_by_id(pck_type))?;
         if pck_crl.is_empty() {
             return Err(TdxError::Http("PCK CRL is empty".to_string()));
         }
 
+        let tcb_info_json = std::str::from_utf8(&tcb_info)?;
+        let qe_identity_json = std::str::from_utf8(&qe_identity)?;
+
         // Pass all the collaterals into a struct for verifying the quote.
-        let current_time = chrono::Utc::now().timestamp() as u64;
-        let mut collaterals = IntelCollateral::new();
+        let collaterals = Collateral::new(
+            &root_ca_crl,
+            &pck_crl,
+            &combined_pem,
+            &tcb_info_json,
+            &qe_identity_json,
+        )?;
 
-        collaterals.set_tcbinfo_bytes(&tcb_info);
-        collaterals.set_qeidentity_bytes(&qe_identity);
-        collaterals.set_intel_root_ca_der(&root_ca);
-        collaterals.set_sgx_tcb_signing_der(&signing_ca);
-        collaterals.set_sgx_intel_root_ca_crl_der(&root_ca_crl);
-        match pck_type {
-            CA::PLATFORM => {
-                collaterals.set_sgx_platform_crl_der(&pck_crl);
-            }
-            CA::PROCESSOR => {
-                collaterals.set_sgx_processor_crl_der(&pck_crl);
-            }
-            _ => {
-                return Err(TdxError::Http("Unknown PCK Type".to_string()));
-            }
-        }
-
-        match panic::catch_unwind(|| verify_quote_dcapv4(report, &collaterals, current_time)) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(TdxError::Dcap(format!("DCAP Error: {:?}", e))),
-        }
+        verify_dcap_quote(SystemTime::now(), collaterals, report)?;
+        Ok(())
     }
 }
 
