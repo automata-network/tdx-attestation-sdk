@@ -1,78 +1,111 @@
+use dcap_script::cli::*;
+
+use clap::Parser;
 use dcap_rs::types::collateral::Collateral;
 use dcap_rs::types::VerifiedOutput;
+use pccs_reader_rs::{
+    dotenvy, find_missing_collaterals_from_quote, tcb_pem::generate_tcb_issuer_chain_pem,
+};
 use core::GuestInput;
 use sp1_sdk::{utils, HashableKey, ProverClient, SP1Stdin, include_elf};
 
 pub const DCAP_ELF: &[u8] = include_elf!("dcap-sp1-guest-program");
 
-fn main() {
+#[tokio::main]
+async fn main() {
     utils::setup_logger();
 
-    let raw_quote = include_bytes!("../../data/quote.dat");
+    dotenvy::dotenv().ok();
 
-    let collateral = Collateral::new(
-        include_bytes!("../../data/intel_root_crl.der"),
-        include_bytes!("../../data/pck_platform_crl.der"),
-        include_bytes!("../../data/signing_cert.pem"),
-        include_str!("../../data/tcbinfo-tdx-v3.json"),
-        include_str!("../../data/identity_tdx.json"),
-    )
-    .unwrap();
+    let cli = Cli::parse();
 
-    // // get current time in seconds since epoch
-    // let current_time = std::time::SystemTime::now()
-    //     .duration_since(std::time::UNIX_EPOCH)
-    //     .unwrap()
-    //     .as_secs();
+    match &cli.command {
+        Commands::Deserialize(args) => {
+            let output_vec =
+                hex::decode(remove_prefix_if_found(&args.output)).expect("Failed to parse output");
+            let deserialized_output = VerifiedOutput::from_bytes(&output_vec);
+            println!("Deserialized output: {:?}", deserialized_output);
+        },
+        Commands::Prove(args) => {
+            let raw_quote = get_quote(&args.quote_path, &args.quote_hex);
 
-    let current_time = 1749095100u64;
+            let fetched_collaterals =
+                find_missing_collaterals_from_quote(raw_quote.as_slice(), false)
+                    .await
+                    .unwrap();
 
-    let guest_input = GuestInput {
-        raw_quote: raw_quote.to_vec(),
-        collateral: collateral,
-        timestamp: current_time,
-    };
+            log::debug!("Fetched collaterals: {:?}", fetched_collaterals);
 
-    let input_string = serde_json::to_string(&guest_input).unwrap();
+            let tcb_issuer_chain_pem = generate_tcb_issuer_chain_pem(
+                fetched_collaterals.tcb_signing_ca.as_slice(),
+                fetched_collaterals.root_ca.as_slice(),
+            );
 
-    let mut stdin = SP1Stdin::new();
-    stdin.write(&input_string);
+            let collateral = Collateral::new(
+                fetched_collaterals.root_ca_crl.as_slice(),
+                fetched_collaterals.pck_crl.as_slice(),
+                tcb_issuer_chain_pem.unwrap().as_bytes(),
+                fetched_collaterals.tcb_info.as_str(),
+                fetched_collaterals.qe_identity.as_str(),
+            )
+            .unwrap();
 
-    let client = ProverClient::from_env();
+            // get current time in seconds since epoch
+            let current_time = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs();
 
-    // Execute the program first
-    let (ret, report) = client.execute(DCAP_ELF, &stdin).run().unwrap();
-    println!(
-        "executed program with {} cycles",
-        report.total_instruction_count()
-    );
-    // println!("{:?}", report);
+            let guest_input = GuestInput {
+                raw_quote: raw_quote.to_vec(),
+                collateral: collateral,
+                timestamp: current_time,
+            };
 
-    // Generate the proof
-    let (pk, vk) = client.setup(DCAP_ELF);
-    // let proof = client.prove(&pk, &stdin).groth16().run().unwrap();
-    let proof = client.prove(&pk, &stdin).plonk().run().unwrap();
+            let input_string = serde_json::to_string(&guest_input).unwrap();
 
-    let ret_slice = ret.as_slice();
-    let output_len = u16::from_be_bytes([ret_slice[0], ret_slice[1]]) as usize;
-    let mut output = Vec::with_capacity(output_len);
-    output.extend_from_slice(&ret_slice[2..2 + output_len]);
+            let mut stdin = SP1Stdin::new();
+            stdin.write(&input_string);
 
-    let proof_bytes = proof.bytes();
+            let client = ProverClient::from_env();
 
-    println!("Execution Output: {}", hex::encode(ret_slice));
-    println!(
-        "Proof pub value: {}",
-        hex::encode(proof.public_values.as_slice())
-    );
-    println!("VK: {}", vk.bytes32().to_string().as_str());
-    println!("Proof: {}", hex::encode(&proof_bytes));
-    println!("Proof selector: {}", hex::encode(&proof_bytes[..4]));
+            // Execute the program first
+            let (ret, report) = client.execute(DCAP_ELF, &stdin).run().unwrap();
+            log::info!(
+                "executed program with {} cycles",
+                report.total_instruction_count()
+            );
 
-    let parsed_output = VerifiedOutput::from_bytes(&output);
-    println!("{:?}", parsed_output);
+            // Generate the proof
+            let (pk, vk) = client.setup(DCAP_ELF);
+            let proof_system = args.proof_system.unwrap();
+            let proof = match proof_system {
+                ProofSystem::Groth16 => client.prove(&pk, &stdin).groth16().run().unwrap(),
+                ProofSystem::Plonk => client.prove(&pk, &stdin).plonk().run().unwrap()
+            };
 
-    // Verify proof
-    client.verify(&proof, &vk).expect("Failed to verify proof");
-    println!("Successfully verified proof.");
+            let ret_slice = ret.as_slice();
+            let output_len = u16::from_be_bytes([ret_slice[0], ret_slice[1]]) as usize;
+            let mut output = Vec::with_capacity(output_len);
+            output.extend_from_slice(&ret_slice[2..2 + output_len]);
+
+            let proof_bytes = proof.bytes();
+
+            println!("Execution Output: {}", hex::encode(ret_slice));
+            println!(
+                "Proof pub value: {}",
+                hex::encode(proof.public_values.as_slice())
+            );
+            println!("VK: {}", vk.bytes32().to_string().as_str());
+            println!("Proof: {}", hex::encode(&proof_bytes));
+            println!("Proof selector: {}", hex::encode(&proof_bytes[..4]));
+
+            let parsed_output = VerifiedOutput::from_bytes(&output);
+            println!("{:?}", parsed_output);
+
+            // Verify proof
+            client.verify(&proof, &vk).expect("Failed to verify proof");
+            println!("Successfully verified proof.");
+        }
+    }
 }
