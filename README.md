@@ -7,6 +7,7 @@
 </div>
 
 # Automata TDX Attestation SDK
+[![Releases](https://img.shields.io/github/v/release/automata-network/tdx-attestation-sdk)](https://github.com/automata-network/tdx-attestation-sdk/releases/tag/v0.1.1)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 ## Overview
