@@ -90,8 +90,6 @@ fn main() {
         )
     }
 
-    // TODO: Implement code for retrieving receipt journal here.
-
     // Optional: Verify receipt to confirm that recipients will also be able to
     // verify your receipt
     receipt.verify(DCAP_GUEST_ID).unwrap();
