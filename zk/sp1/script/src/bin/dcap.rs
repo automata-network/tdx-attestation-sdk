@@ -62,10 +62,10 @@ async fn main() {
                 timestamp: current_time,
             };
 
-            let input_string = serde_json::to_string(&guest_input).unwrap();
+            let input_bytes = guest_input.sol_abi_encode();
 
             let mut stdin = SP1Stdin::new();
-            stdin.write(&input_string);
+            stdin.write_slice(&input_bytes);
 
             let client = ProverClient::from_env();
 

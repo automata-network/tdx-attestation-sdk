@@ -7,4 +7,3 @@ edition = "2021"
 core = { path = "../core" }
 dcap-rs = { workspace = true }
 sp1-zkvm = { workspace = true }
-serde_json = { workspace = true }

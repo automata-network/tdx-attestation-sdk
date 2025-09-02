@@ -1,5 +1,7 @@
 #![no_main]
 
+use std::io::Read;
+
 use risc0_zkvm::guest::env;
 risc0_zkvm::guest::entry!(main);
 
@@ -12,8 +14,10 @@ use dcap_rs::{
 
 fn main() {
     // read the values passed from host
-    let input_json: String = env::read();
-    let input = serde_json::from_str::<GuestInput>(input_json.as_str()).unwrap();
+    let mut input_bytes: Vec<u8> = vec![];
+    env::stdin().read_to_end(&mut input_bytes).unwrap();
+
+    let input = GuestInput::sol_abi_decode(&input_bytes);
     let quote = Quote::read(&mut input.raw_quote.as_slice()).unwrap();
     let current_time = SystemTime::UNIX_EPOCH + Duration::from_secs(input.timestamp);
 

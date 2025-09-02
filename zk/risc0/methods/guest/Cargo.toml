@@ -7,11 +7,10 @@ edition = "2021"
 
 [dependencies]
 risc0-zkvm = { version = "^2.2.0", default-features = false, features = ["std", "unstable"] }
-dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", rev = "8b199ed574fbab717e62d4031578632d949c99bb" }
+dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", rev = "ba9d0beb2e3a30847526f8e3b2f6a929bdbc900f" }
 core = { path = "../../core" }
 hex = "0.4"
 chrono = "0.4"
-serde_json = { version = "1.0.125", features = ["raw_value"] }
 
 [patch.crates-io]
 sha2 = { git = "https://github.com/risc0/RustCrypto-hashes", tag = "sha2-v0.10.8-risczero.0" }

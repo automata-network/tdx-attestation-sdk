@@ -75,14 +75,13 @@ async fn main() {
                 timestamp: current_time,
             };
 
-            let input_string = serde_json::to_string(&guest_input).unwrap();
+            let input_bytes = guest_input.sol_abi_encode();
             let env = ExecutorEnv::builder()
-                .write(&input_string)
-                .unwrap()
+                .write_slice(&input_bytes)
                 .build()
                 .unwrap();
 
-            log::debug!("Guest input: {}", input_string);
+            log::debug!("Guest input: {}", hex::encode(&input_bytes));
             log::info!("RISC Zero version: {}", RISCZERO_VERSION);
             log::info!("Image ID: {}", compute_image_id(DCAP_GUEST_ELF).unwrap());
 

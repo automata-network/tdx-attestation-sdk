@@ -10,11 +10,11 @@ use dcap_rs::{
 
 pub fn main() {
     // Read the input
-    let input_json: String = sp1_zkvm::io::read();
-    let input = serde_json::from_str::<GuestInput>(input_json.as_str()).unwrap();
+    let input_bytes: Vec<u8> = sp1_zkvm::io::read_vec();
+    let input = GuestInput::sol_abi_decode(&input_bytes);
+
     let quote = Quote::read(&mut input.raw_quote.as_slice()).unwrap();
     let current_time = SystemTime::UNIX_EPOCH + Duration::from_secs(input.timestamp);
-
     let collaterals = &input.collateral;
 
     // Pre-process the output
