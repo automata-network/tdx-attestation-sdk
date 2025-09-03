@@ -7,7 +7,7 @@ use pccs_reader_rs::{
     dotenvy, find_missing_collaterals_from_quote, tcb_pem::generate_tcb_issuer_chain_pem,
 };
 use core::GuestInput;
-use sp1_sdk::{utils, HashableKey, ProverClient, SP1Stdin, include_elf};
+use sp1_sdk::{utils, HashableKey, ProverClient, SP1Stdin, include_elf, network::FulfillmentStrategy, Prover};
 
 pub const DCAP_ELF: &[u8] = include_elf!("dcap-sp1-guest-program");
 
@@ -67,7 +67,13 @@ async fn main() {
             let mut stdin = SP1Stdin::new();
             stdin.write_slice(&input_bytes);
 
-            let client = ProverClient::from_env();
+            let network_mode = args.network_prover_mode.unwrap();
+            let client = ProverClient::builder().network().build();
+            let strategy = match network_mode {
+                NetworkProverMode::Auction => FulfillmentStrategy::Auction,
+                NetworkProverMode::Hosted => FulfillmentStrategy::Hosted,
+                NetworkProverMode::Reserved => FulfillmentStrategy::Reserved
+            };
 
             // Execute the program first
             let (ret, report) = client.execute(DCAP_ELF, &stdin).run().unwrap();
@@ -80,8 +86,8 @@ async fn main() {
             let (pk, vk) = client.setup(DCAP_ELF);
             let proof_system = args.proof_system.unwrap();
             let proof = match proof_system {
-                ProofSystem::Groth16 => client.prove(&pk, &stdin).groth16().run().unwrap(),
-                ProofSystem::Plonk => client.prove(&pk, &stdin).plonk().run().unwrap()
+                ProofSystem::Groth16 => client.prove(&pk, &stdin).groth16().strategy(strategy).run().unwrap(),
+                ProofSystem::Plonk => client.prove(&pk, &stdin).plonk().strategy(strategy).run().unwrap()
             };
 
             let ret_slice = ret.as_slice();

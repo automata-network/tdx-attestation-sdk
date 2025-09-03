@@ -30,6 +30,17 @@ pub enum ProofSystem {
     Plonk,
 }
 
+/// Enum representing the network prover modes
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+pub enum NetworkProverMode {
+    /// Uses prover network on mainnet
+    Auction,
+    /// Uses Succinct Labs on-demand prover
+    Hosted,
+    /// Uses an already existing agreement with a fulfiller
+    Reserved
+}
+
 #[derive(Args)]
 pub struct DcapArgs {
     /// The input quote provided as a hex string, this overwrites the --quote-path argument
@@ -47,6 +58,14 @@ pub struct DcapArgs {
         default_value = "groth16"
     )]
     pub proof_system: Option<ProofSystem>,
+
+    #[arg(
+        short = 'n',
+        long = "network-prover-mode",
+        value_enum,
+        default_value = "auction"
+    )]
+    pub network_prover_mode: Option<NetworkProverMode>,
 
     /// Optional: Locally verify the proof after it is generated
     #[arg(short = 'v', long = "verify")]

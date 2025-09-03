@@ -11,7 +11,7 @@ path = "src/bin/dcap.rs"
 [dependencies]
 core = { path = "../core" }
 dcap-rs = { workspace = true }
-sp1-sdk = { workspace = true }
+sp1-sdk = { workspace = true, features = ["network"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 log = { version = "0.4" }
 clap = { version = "4.0", features = ["derive", "env"] }
@@ -21,5 +21,5 @@ anyhow = "1.0.82"
 pccs-reader-rs = { git = "https://github.com/automata-network/pccs-reader-rs.git", branch = "updates/preston" }
 
 [build-dependencies]
-sp1-build = "^5.0.0"
+sp1-build = "^5.2.1"
 sp1-sdk.workspace = true

@@ -54,7 +54,7 @@ cargo prove vkey --elf elf/dcap-sp1-guest-program-elf
 
 ## Using the Prover Network
 
-We highly recommend using the Succinct prover network for any non-trivial programs or benchmarking purposes. For more information, see the [setup guide](https://docs.succinct.xyz/docs/generating-proofs/prover-network/usage).
+We highly recommend using the Succinct prover network for any non-trivial programs or benchmarking purposes. For more information, see [quickstart](hhttps://docs.succinct.xyz/docs/sp1/prover-network/quickstart).
 
 To get started, copy the example environment file:
 
@@ -62,12 +62,14 @@ To get started, copy the example environment file:
 cp .env.example .env
 ```
 
-Then, set the `SP1_PROVER` environment variable to `network` and set the `NETWORK_PRIVATE_KEY`
-environment variable to your whitelisted private key.
+Then, set the `NETWORK_PRIVATE_KEY` environment variable to your whitelisted private key.
 
 For example, to generate an EVM-compatible proof using the prover network, run the following
 command:
 
 ```sh
-SP1_PROVER=network NETWORK_PRIVATE_KEY=... cargo run --release
+NETWORK_PRIVATE_KEY=... cargo run --release
 ```
+
+### Prover Network Mode
+
