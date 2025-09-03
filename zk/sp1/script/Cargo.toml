@@ -11,7 +11,7 @@ path = "src/bin/dcap.rs"
 [dependencies]
 core = { path = "../core" }
 dcap-rs = { workspace = true }
-sp1-sdk = { workspace = true, features = ["network"] }
+sp1-sdk = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 log = { version = "0.4" }
 clap = { version = "4.0", features = ["derive", "env"] }

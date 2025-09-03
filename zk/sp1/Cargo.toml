@@ -8,7 +8,7 @@ resolver = "2"
 
 [workspace.dependencies]
 dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", rev = "ba9d0beb2e3a30847526f8e3b2f6a929bdbc900f" }
-sp1-sdk = { version = "^5.2.1", default-features = false }
+sp1-sdk = { version = "^5.2.1" }
 sp1-zkvm = { version = "^5.2.1" }
 
 [patch.crates-io]

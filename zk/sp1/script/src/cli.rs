@@ -33,12 +33,12 @@ pub enum ProofSystem {
 /// Enum representing the network prover modes
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 pub enum NetworkProverMode {
-    /// Uses prover network on mainnet
-    Auction,
-    /// Uses Succinct Labs on-demand prover
+    /// Uses Succinct Labs on-demand prover (default)
     Hosted,
     /// Uses an already existing agreement with a fulfiller
-    Reserved
+    Reserved,
+    /// Uses prover network on mainnet. disable "reserved-capacity" feature in sp1-sdk
+    Auction,
 }
 
 #[derive(Args)]
@@ -63,7 +63,7 @@ pub struct DcapArgs {
         short = 'n',
         long = "network-prover-mode",
         value_enum,
-        default_value = "auction"
+        default_value = "hosted"
     )]
     pub network_prover_mode: Option<NetworkProverMode>,
 
