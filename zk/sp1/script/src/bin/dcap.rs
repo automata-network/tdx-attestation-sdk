@@ -102,7 +102,8 @@ async fn main() {
                 "Proof pub value: {}",
                 hex::encode(proof.public_values.as_slice())
             );
-            println!("VK: {}", vk.bytes32().to_string().as_str());
+            println!("VK (onchain): {}", vk.bytes32().to_string().as_str());
+            println!("VK hash bytes: {}", hex::encode(vk.hash_bytes()));
             println!("Proof: {}", hex::encode(&proof_bytes));
             println!("Proof selector: {}", hex::encode(&proof_bytes[..4]));
 
