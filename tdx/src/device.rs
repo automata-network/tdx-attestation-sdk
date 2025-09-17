@@ -53,7 +53,7 @@ impl Device {
         let report_data = match self.provider.device_type {
             CocoDeviceType::Tpm => {
                 if !self.options.report_data.is_none() {
-                    return Err("report_data cannot be provided for TPM!".into());
+                    return Err("report_data cannot be provided for TPM device type!".into());
                 }
                 None
             }
