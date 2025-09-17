@@ -72,7 +72,7 @@ impl Tdx {
     /// This function verifies the chain of trust for the attestation report.
     pub fn verify_attestation_report(&self, report: &QuoteV4) -> Result<()> {
         // First retrieve all the required collaterals.
-        let rt = Runtime::new().unwrap();
+        let rt = Runtime::new().map_err(|e| TdxError::Anyhow(format!("Failed to create runtime: {}", e)))?;
         let (root_ca, root_ca_crl) = rt.block_on(get_certificate_by_id(CA::ROOT))?;
         if root_ca.is_empty() || root_ca_crl.is_empty() {
             return Err(TdxError::Http("Root CA or CRL is empty".to_string()));
@@ -141,9 +141,15 @@ pub mod c {
     /// before you call get_attestation_report_raw().
     #[no_mangle]
     pub extern "C" fn tdx_generate_attestation_report() -> usize {
-        let tdx = Tdx::new();
+        let tdx = match Tdx::new() {
+            Ok(tdx) => tdx,
+            Err(_) => return 0, // Return 0 to indicate error
+        };
 
-        let (report_bytes, var_data) = tdx.get_attestation_report_raw().unwrap();
+        let (report_bytes, var_data) = match tdx.get_attestation_report_raw() {
+            Ok(result) => result,
+            Err(_) => return 0, // Return 0 to indicate error
+        };
         let report_len = report_bytes.len();
         let var_data_len = var_data.as_ref().map_or(0, |v| v.len());
         match ATTESTATION_REPORT.lock() {
@@ -158,7 +164,9 @@ pub mod c {
         if var_data_len > 0 {
             match VAR_DATA.lock() {
                 Ok(mut t) => {
-                    *t = var_data.unwrap();
+                    if let Some(data) = var_data {
+                        *t = data;
+                    }
                 }
                 Err(e) => {
                     panic!("Error: {:?}", e);
@@ -173,7 +181,10 @@ pub mod c {
     /// before you call get_attestation_report_raw().
     #[no_mangle]
     pub extern "C" fn tdx_generate_attestation_report_with_options(report_data: *mut u8) -> usize {
-        let tdx = Tdx::new();
+        let tdx = match Tdx::new() {
+            Ok(tdx) => tdx,
+            Err(_) => return 0, // Return 0 to indicate error
+        };
         let mut rust_report_data: [u8; 64] = [0; 64];
         unsafe {
             copy_nonoverlapping(report_data, rust_report_data.as_mut_ptr(), 64);
@@ -181,9 +192,11 @@ pub mod c {
         let device_options = DeviceOptions {
             report_data: Some(rust_report_data),
         };
-        let (report_bytes, var_data) = tdx
-            .get_attestation_report_raw_with_options(device_options)
-            .unwrap();
+        let (report_bytes, var_data) = match tdx
+            .get_attestation_report_raw_with_options(device_options) {
+            Ok(result) => result,
+            Err(_) => return 0, // Return 0 to indicate error
+        };
         let report_len = report_bytes.len();
         let var_data_len = var_data.as_ref().map_or(0, |v| v.len());
         match ATTESTATION_REPORT.lock() {
@@ -198,7 +211,9 @@ pub mod c {
         if var_data_len > 0 {
             match VAR_DATA.lock() {
                 Ok(mut t) => {
-                    *t = var_data.unwrap();
+                    if let Some(data) = var_data {
+                        *t = data;
+                    }
                 }
                 Err(e) => {
                     panic!("Error: {:?}", e);
