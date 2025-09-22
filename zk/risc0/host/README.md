@@ -41,7 +41,7 @@ cargo build --release
 You may run the following command to see available commands.
 
 ```bash
-./target/release/dcap-bonsai-cli --help
+./target/release/prover --help
 ```
 
 Outputs:
@@ -49,7 +49,7 @@ Outputs:
 ```bash
 Gets Bonsai Proof for DCAP Quote Verification and submits on-chain
 
-Usage: dcap-bonsai-cli <COMMAND>
+Usage: prover <COMMAND>
 
 Commands:
   prove        Fetches proof from Bonsai and sends them on-chain to verify DCAP quote
@@ -66,7 +66,7 @@ Options:
 To get help on individual commands (e.g. `prove`), do the following:
 
 ```bash
-./target/release/dcap-bonsai-cli prove --help
+./target/release/prover prove --help
 ```
 
 Output:
@@ -74,7 +74,7 @@ Output:
 ```bash
 Fetches proof from Bonsai and sends them on-chain to verify DCAP quote
 
-Usage: dcap-bonsai-cli prove [OPTIONS]
+Usage: prover prove [OPTIONS]
 
 Options:
   -q, --quote-hex <QUOTE_HEX>
@@ -103,7 +103,7 @@ It is also recommended to set the environment value `RUST_LOG=info` to view logs
 To begin, run the command below:
 
 ```bash
-RUST_LOG=info ../target/release/dcap-bonsai-cli prove
+RUST_LOG=info ../target/release/prover prove
 ```
 >
 > [!NOTE]
@@ -115,6 +115,6 @@ RUST_LOG=info ../target/release/dcap-bonsai-cli prove
 > You may run the command below to check the computed ImageID for the provided Guest program ELF.
 >
 > ``` bash
-> ./target/release/dcap-bonsai-cli image-id
+> ./target/release/prover image-id
 > ```
 >

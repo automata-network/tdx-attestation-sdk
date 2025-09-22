@@ -1,6 +1,7 @@
 use alloy_sol_types::{SolType, sol};
 use dcap_rs::types::collateral::Collateral;
 
+#[derive(Debug)]
 pub struct GuestInput {
     pub collateral: Collateral,
     pub raw_quote: Vec<u8>,
