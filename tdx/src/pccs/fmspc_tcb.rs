@@ -42,7 +42,7 @@ pub async fn get_tcb_info(tcb_type: u8, fmspc: &str, version: u32) -> Result<Vec
 
     if tcb_info_str.len() == 0 || signature_bytes.len() == 0 {
         return Err(anyhow::Error::msg(format!(
-            "TCBInfo for FMSPC: {}; Version: {} is missing and must be upserted to on-chain pccs",
+            "TCBInfo for FMSPC: {}; Version: {} is missing and must be inserted to on-chain pccs",
             fmspc, version
         )));
     }
