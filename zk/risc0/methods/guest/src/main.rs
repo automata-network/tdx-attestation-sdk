@@ -108,7 +108,7 @@ fn main() {
     // qeidentity_content_hash
     // sgx_intel_root_ca_cert_hash
     // sgx_tcb_signing_cert_hash
-    // sgx_tcb_intel_root_ca_crl_hash
+    // sgx_intel_root_ca_crl_hash
     // sgx_pck_platform_crl_hash or sgx_pck_processor_crl_hash
     let journal_len = serial_output.len() + 226;
     let mut journal_output: Vec<u8> = Vec::with_capacity(journal_len);
