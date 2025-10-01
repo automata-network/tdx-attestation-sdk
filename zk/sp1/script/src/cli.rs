@@ -63,7 +63,7 @@ pub struct DcapArgs {
         short = 'n',
         long = "network-prover-mode",
         value_enum,
-        default_value = "hosted"
+        default_value = "auction"
     )]
     pub network_prover_mode: Option<NetworkProverMode>,
 
