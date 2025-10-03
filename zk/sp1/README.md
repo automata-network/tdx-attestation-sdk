@@ -75,18 +75,14 @@ NETWORK_PRIVATE_KEY=... cargo run --release
 
 The CLI currently supports the following network proving strategies:
 
-- **Hosted Strategy:**
+- **Auction Strategy:**
 
-This is the strategy selected at default, which uses Succinct on-demand prover network.
+This is the proving strategy selected by default. Requests proofs directly on the mainnet using an auctioning mechanism. You must make sure that your account is funded with $PROVE tokens.
 
 - **Reserved Strategy:**
 
 Uses network with reserved capacity upon agreement with Succinct. Read [reserved capacity](https://docs.succinct.xyz/docs/sp1/prover-network/reserved-capacity) from the docs to learn more.
 
-- **Auction Strategy:**
+- **Hosted Strategy:**
 
-Requests proofs directly on the mainnet using an auctioning mechanism. You must make sure that your account is funded with $PROVE tokens.
-
-> [!NOTE]
->
-> You must disable `reserved-capacity` feature in the `sp1-sdk` crate to use the Auction strategy.
+Requests proof from Succinct on-demand prover network.
