@@ -92,7 +92,13 @@ You can get started by setting the following environment variables with your whi
 
 ```bash
 export SP1_PROVER=network
-export SP1_PRIVATE_KEY=""
+export NETWORK_PRIVATE_KEY=""
+```
+
+For example, to run with the prover network enabled:
+
+```bash
+SP1_PROVER=network NETWORK_PRIVATE_KEY=... cargo run --release
 ```
 
 ## Acknowledgements
