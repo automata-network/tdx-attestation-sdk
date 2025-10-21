@@ -5,4 +5,5 @@ edition = "2024"
 
 [dependencies]
 pico-sdk = { workspace = true }
-fibonacci-lib ={ path = "../lib"}
+dcap-rs = { workspace = true }
+pico-dcap-core = { path = "../core" }

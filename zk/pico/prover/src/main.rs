@@ -1,48 +1,126 @@
-use fibonacci_lib::{fibonacci, load_elf, deserialize_fibonacci_data, FibonacciData};
+mod cli;
+
+use clap::Parser;
+use pico_dcap_core::{load_elf, GuestInput};
+use dcap_rs::types::collateral::Collateral;
+use dcap_rs::types::VerifiedOutput;
+use pccs_reader_rs::{
+    dotenvy, find_missing_collaterals_from_quote, tcb_pem::generate_tcb_issuer_chain_pem,
+};
 use pico_sdk::{client::DefaultProverClient, init_logger};
 
-fn main() {
+use cli::*;
+
+#[tokio::main]
+async fn main() {
+    dotenvy::dotenv().ok();
+
+    let cli = Cli::parse();
+
     // Initialize logger
     init_logger();
 
-    // Load the ELF file
-    let elf = load_elf("../app/elf/riscv32im-pico-zkvm-elf");
+    match &cli.command {
+        Commands::Deserialize(args) => {
+            let output_vec =
+                hex::decode(remove_prefix_if_found(&args.output)).expect("Failed to parse output");
+            let deserialized_output = VerifiedOutput::from_bytes(&output_vec);
+            println!("Deserialized output: {:?}", deserialized_output);
+        }
+        Commands::Prove(args) => {
+            let raw_quote = get_quote(&args.quote_path, &args.quote_hex);
 
-    // Initialize the prover client
-    let client = DefaultProverClient::new(&elf);
-    // Initialize new stdin
-    let mut stdin_builder = client.new_stdin_builder();
+            let fetched_collaterals =
+                find_missing_collaterals_from_quote(raw_quote.as_slice(), false)
+                    .await
+                    .unwrap();
 
-    // Set up input
-    let n = 5u32;
-    stdin_builder.write_slice(&n.to_le_bytes());
+            log::debug!("Fetched collaterals: {:?}", fetched_collaterals);
 
-    // Generate proof
-    let proof = client
-        .prove_fast(stdin_builder)
-        .expect("Failed to generate proof");
+            let tcb_issuer_chain_pem = generate_tcb_issuer_chain_pem(
+                fetched_collaterals.tcb_signing_ca.as_slice(),
+                fetched_collaterals.root_ca.as_slice(),
+            );
 
-    // Decodes public values from the proof's public value stream.
-    let public_buffer = proof.pv_stream.unwrap();
+            let collateral = Collateral::new(
+                fetched_collaterals.root_ca_crl.as_slice(),
+                fetched_collaterals.pck_crl.as_slice(),
+                tcb_issuer_chain_pem.unwrap().as_bytes(),
+                fetched_collaterals.tcb_info.as_str(),
+                fetched_collaterals.qe_identity.as_str(),
+            )
+            .unwrap();
 
-    // Deserialize public_buffer into FibonacciData
-    let public_values: FibonacciData = deserialize_fibonacci_data(&public_buffer);
+            // get current time in seconds since epoch
+            let current_time = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs();
 
-    // Verify the public values
-    verify_public_values(n, &public_values);
-}
+            let guest_input = GuestInput {
+                raw_quote: raw_quote.to_vec(),
+                collateral: collateral,
+                timestamp: current_time,
+            };
 
-/// Verifies that the computed Fibonacci values match the public values.
-fn verify_public_values(n: u32, public_values: &FibonacciData) {
-    println!(
-        "Public value n: {:?}, a: {:?}, b: {:?}",
-        public_values.n, public_values.a, public_values.b
-    );
+            let input_bytes = guest_input.sol_abi_encode();
 
-    // Compute Fibonacci values locally
-    let (result_a, result_b) = fibonacci(0, 1, n);
+            log::debug!("Guest input: {}", hex::encode(&input_bytes));
 
-    // Assert that the computed values match the public values
-    assert_eq!(result_a, public_values.a, "Mismatch in value 'a'");
-    assert_eq!(result_b, public_values.b, "Mismatch in value 'b'");
+            // Load the ELF file
+            let elf = load_elf("../app/elf/riscv32im-pico-zkvm-elf");
+
+            // Initialize the prover client
+            let client = DefaultProverClient::new(&elf);
+            // Initialize new stdin
+            let mut stdin_builder = client.new_stdin_builder();
+
+            // Set up input
+            stdin_builder.write_slice(&input_bytes);
+
+            // Generate proof
+            let proof = client
+                .prove_fast(stdin_builder)
+                .expect("Failed to generate proof");
+
+            // Decodes public values from the proof's public value stream.
+            let public_buffer = proof.pv_stream.unwrap();
+
+            log::debug!("Proof generated successfully");
+
+            // manually parse the output
+            let mut offset: usize = 0;
+            let output_len = u16::from_be_bytes(public_buffer[offset..offset + 2].try_into().unwrap());
+
+            offset += 2;
+            let verified_output =
+                VerifiedOutput::from_bytes(&public_buffer[offset..offset + output_len as usize]).unwrap();
+            offset += output_len as usize;
+            let current_time = u64::from_be_bytes(public_buffer[offset..offset + 8].try_into().unwrap());
+            offset += 8;
+            let tcbinfo_root_hash = &public_buffer[offset..offset + 32];
+            offset += 32;
+            let enclaveidentity_root_hash = &public_buffer[offset..offset + 32];
+            offset += 32;
+            let root_cert_hash = &public_buffer[offset..offset + 32];
+            offset += 32;
+            let signing_cert_hash = &public_buffer[offset..offset + 32];
+            offset += 32;
+            let root_crl_hash = &public_buffer[offset..offset + 32];
+            offset += 32;
+            let pck_crl_hash = &public_buffer[offset..offset + 32];
+
+            println!("Verified Output: {:?}", verified_output);
+            println!("Current time: {}", current_time);
+            println!("TCB Info Root Hash: {:?}", tcbinfo_root_hash);
+            println!(
+                "Enclave Identity Root Hash: {:?}",
+                enclaveidentity_root_hash
+            );
+            println!("Root Cert Hash: {:?}", root_cert_hash);
+            println!("Signing Cert Hash: {:?}", signing_cert_hash);
+            println!("RootCRL Hash: {:?}", root_crl_hash);
+            println!("PCK CRL Hash: {:?}", pck_crl_hash);
+        }
+    }
 }

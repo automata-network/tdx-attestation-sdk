@@ -5,6 +5,11 @@ edition = "2024"
 
 [dependencies]
 pico-sdk = { workspace = true }
-bincode = "1.3.3"
-fibonacci-lib ={ path = "../lib"}
+dcap-rs = { workspace = true }
+pccs-reader-rs = { workspace = true }
+pico-dcap-core = { path = "../core" }
+clap = { workspace = true }
+tokio = { workspace = true }
+hex = { workspace = true }
+log = { workspace = true }
 serde = { workspace = true }

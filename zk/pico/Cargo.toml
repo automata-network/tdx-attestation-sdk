@@ -1,11 +1,23 @@
 [workspace]
-members = [ 
-    "lib",
-    "app", 
+members = [
+    "core",
+    "app",
     "prover",
 ]
 resolver = "2"
 
 [workspace.dependencies]
 pico-sdk = { git = "https://github.com/brevis-network/pico", tag = "v1.1.6" }
+dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", rev = "ba9d0beb2e3a30847526f8e3b2f6a929bdbc900f" }
 serde = { version = "1.0.205", features = ["derive"] }
+alloy-sol-types = "1.3.1"
+pccs-reader-rs = { git = "https://github.com/automata-network/pccs-reader-rs.git", branch = "updates/preston" }
+clap = { version = "4.5", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+hex = "0.4"
+log = "0.4"
+
+[patch.crates-io]
+sha2 = { git = "https://github.com/brevis-network/hashes", tag = "pico-patch-v1.0.1-sha2-v0.10.8" }
+ecdsa = { git = "https://github.com/brevis-network/signatures", tag = "pico-patch-v1.0.1-ecdsa-0.16.9" }
+tiny-keccak = { git = "https://github.com/brevis-network/tiny-keccak", tag = "pico-patch-v1.0.0-keccak-v2.0.2" }
