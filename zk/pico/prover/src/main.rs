@@ -1,14 +1,12 @@
-mod cli;
-
-use clap::Parser;
-use pico_dcap_core::{load_elf, GuestInput};
-use dcap_rs::types::collateral::Collateral;
-use dcap_rs::types::VerifiedOutput;
+use dcap_rs::types::{VerifiedOutput, collateral::Collateral};
 use pccs_reader_rs::{
     dotenvy, find_missing_collaterals_from_quote, tcb_pem::generate_tcb_issuer_chain_pem,
 };
-use pico_sdk::{client::DefaultProverClient, init_logger};
+use pico_dcap_core::GuestInput;
+use pico_sdk::init_logger;
+use prover::{cli, prove};
 
+use clap::Parser;
 use cli::*;
 
 #[tokio::main]
@@ -27,100 +25,56 @@ async fn main() {
             let deserialized_output = VerifiedOutput::from_bytes(&output_vec);
             println!("Deserialized output: {:?}", deserialized_output);
         }
+        Commands::Parse(args) => {
+            let input_bytes = std::fs::read(&args.input).expect("Failed to read input file");
+            let guest_input = GuestInput::sol_abi_decode(&input_bytes);
+            println!("Parsed Guest Input: {:?}", guest_input);
+        }
         Commands::Prove(args) => {
-            let raw_quote = get_quote(&args.quote_path, &args.quote_hex);
+            let input_bytes = if let Some(input_path) = &args.guest_input_path {
+                std::fs::read(input_path).expect("Failed to read guest input file")
+            } else {
+                let raw_quote = get_quote(&args.quote_path, &args.quote_hex);
 
-            let fetched_collaterals =
-                find_missing_collaterals_from_quote(raw_quote.as_slice(), false)
-                    .await
-                    .unwrap();
+                let fetched_collaterals =
+                    find_missing_collaterals_from_quote(raw_quote.as_slice(), false)
+                        .await
+                        .unwrap();
 
-            log::debug!("Fetched collaterals: {:?}", fetched_collaterals);
+                log::debug!("Fetched collaterals: {:?}", fetched_collaterals);
 
-            let tcb_issuer_chain_pem = generate_tcb_issuer_chain_pem(
-                fetched_collaterals.tcb_signing_ca.as_slice(),
-                fetched_collaterals.root_ca.as_slice(),
-            );
+                let tcb_issuer_chain_pem = generate_tcb_issuer_chain_pem(
+                    fetched_collaterals.tcb_signing_ca.as_slice(),
+                    fetched_collaterals.root_ca.as_slice(),
+                );
 
-            let collateral = Collateral::new(
-                fetched_collaterals.root_ca_crl.as_slice(),
-                fetched_collaterals.pck_crl.as_slice(),
-                tcb_issuer_chain_pem.unwrap().as_bytes(),
-                fetched_collaterals.tcb_info.as_str(),
-                fetched_collaterals.qe_identity.as_str(),
-            )
-            .unwrap();
+                let collateral = Collateral::new(
+                    fetched_collaterals.root_ca_crl.as_slice(),
+                    fetched_collaterals.pck_crl.as_slice(),
+                    tcb_issuer_chain_pem.unwrap().as_bytes(),
+                    fetched_collaterals.tcb_info.as_str(),
+                    fetched_collaterals.qe_identity.as_str(),
+                )
+                .unwrap();
 
-            // get current time in seconds since epoch
-            let current_time = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_secs();
+                // get current time in seconds since epoch
+                let current_time = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs();
 
-            let guest_input = GuestInput {
-                raw_quote: raw_quote.to_vec(),
-                collateral: collateral,
-                timestamp: current_time,
+                let guest_input = GuestInput {
+                    raw_quote: raw_quote.to_vec(),
+                    collateral: collateral,
+                    timestamp: current_time,
+                };
+                let encoded_input = guest_input.sol_abi_encode();
+                std::fs::write("input.bin", &encoded_input).expect("Failed to write input.bin");
+                encoded_input
             };
 
-            let input_bytes = guest_input.sol_abi_encode();
-
             log::debug!("Guest input: {}", hex::encode(&input_bytes));
-
-            // Load the ELF file
-            let elf = load_elf("../app/elf/riscv32im-pico-zkvm-elf");
-
-            // Initialize the prover client
-            let client = DefaultProverClient::new(&elf);
-            // Initialize new stdin
-            let mut stdin_builder = client.new_stdin_builder();
-
-            // Set up input
-            stdin_builder.write_slice(&input_bytes);
-
-            // Generate proof
-            let proof = client
-                .prove_fast(stdin_builder)
-                .expect("Failed to generate proof");
-
-            // Decodes public values from the proof's public value stream.
-            let public_buffer = proof.pv_stream.unwrap();
-
-            log::debug!("Proof generated successfully");
-
-            // manually parse the output
-            let mut offset: usize = 0;
-            let output_len = u16::from_be_bytes(public_buffer[offset..offset + 2].try_into().unwrap());
-
-            offset += 2;
-            let verified_output =
-                VerifiedOutput::from_bytes(&public_buffer[offset..offset + output_len as usize]).unwrap();
-            offset += output_len as usize;
-            let current_time = u64::from_be_bytes(public_buffer[offset..offset + 8].try_into().unwrap());
-            offset += 8;
-            let tcbinfo_root_hash = &public_buffer[offset..offset + 32];
-            offset += 32;
-            let enclaveidentity_root_hash = &public_buffer[offset..offset + 32];
-            offset += 32;
-            let root_cert_hash = &public_buffer[offset..offset + 32];
-            offset += 32;
-            let signing_cert_hash = &public_buffer[offset..offset + 32];
-            offset += 32;
-            let root_crl_hash = &public_buffer[offset..offset + 32];
-            offset += 32;
-            let pck_crl_hash = &public_buffer[offset..offset + 32];
-
-            println!("Verified Output: {:?}", verified_output);
-            println!("Current time: {}", current_time);
-            println!("TCB Info Root Hash: {:?}", tcbinfo_root_hash);
-            println!(
-                "Enclave Identity Root Hash: {:?}",
-                enclaveidentity_root_hash
-            );
-            println!("Root Cert Hash: {:?}", root_cert_hash);
-            println!("Signing Cert Hash: {:?}", signing_cert_hash);
-            println!("RootCRL Hash: {:?}", root_crl_hash);
-            println!("PCK CRL Hash: {:?}", pck_crl_hash);
+            prove(&input_bytes);
         }
     }
 }
