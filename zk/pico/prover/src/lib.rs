@@ -1,4 +1,5 @@
 pub mod cli;
+pub mod evm_proof;
 
 use dcap_rs::types::VerifiedOutput;
 use pico_dcap_core::load_elf;

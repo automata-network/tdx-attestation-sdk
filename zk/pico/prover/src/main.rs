@@ -4,7 +4,7 @@ use pccs_reader_rs::{
 };
 use pico_dcap_core::GuestInput;
 use pico_sdk::init_logger;
-use prover::{cli, prove};
+use prover::{cli, evm_proof::generate_contract_inputs, prove};
 
 use clap::Parser;
 use cli::*;
@@ -29,6 +29,9 @@ async fn main() {
             let input_bytes = std::fs::read(&args.input).expect("Failed to read input file");
             let guest_input = GuestInput::sol_abi_decode(&input_bytes);
             println!("Parsed Guest Input: {:?}", guest_input);
+        }
+        Commands::GenerateEvmInputs => {
+            generate_contract_inputs();
         }
         Commands::Prove(args) => {
             let input_bytes = if let Some(input_path) = &args.guest_input_path {

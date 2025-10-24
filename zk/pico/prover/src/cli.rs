@@ -24,6 +24,9 @@ pub enum Commands {
 
     /// input.bin parser
     Parse(InputArgs),
+
+    /// generate EVM input
+    GenerateEvmInputs,
 }
 
 #[derive(Args)]
