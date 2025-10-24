@@ -1,3 +1,4 @@
 /target
 **/input.bin
 **/evm_proof_data
+**/out

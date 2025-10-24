@@ -2,7 +2,7 @@ use dcap_rs::types::{VerifiedOutput, collateral::Collateral};
 use pccs_reader_rs::{
     dotenvy, find_missing_collaterals_from_quote, tcb_pem::generate_tcb_issuer_chain_pem,
 };
-use pico_dcap_core::GuestInput;
+use pico_dcap_core::{GuestInput, save_collateral_to_output};
 use pico_sdk::init_logger;
 use prover::{cli, evm_proof::generate_contract_inputs, prove};
 
@@ -29,6 +29,11 @@ async fn main() {
             let input_bytes = std::fs::read(&args.input).expect("Failed to read input file");
             let guest_input = GuestInput::sol_abi_decode(&input_bytes);
             println!("Parsed Guest Input: {:?}", guest_input);
+
+            if let Some(output_dir) = &args.output_dir {
+                log::info!("Writing collaterals to {:?}", output_dir);
+                save_collateral_to_output(&guest_input.collateral, output_dir);
+            }
         }
         Commands::GenerateEvmInputs => {
             generate_contract_inputs();

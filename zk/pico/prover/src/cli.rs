@@ -54,6 +54,9 @@ pub struct OutputArgs {
 pub struct InputArgs {
     #[arg(short = 'i', long = "input-path", default_value = "input.bin")]
     pub input: PathBuf,
+
+    #[arg(short = 'o', long = "output-dir")]
+    pub output_dir: Option<PathBuf>,
 }
 
 pub fn get_quote(path: &Option<PathBuf>, hex: &Option<String>) -> Vec<u8> {
@@ -71,11 +74,8 @@ pub fn get_quote(path: &Option<PathBuf>, hex: &Option<String>) -> Vec<u8> {
                 quote_hex
             }
             _ => {
-                let default_path = PathBuf::from(format!(
-                    "{}/{}",
-                    MANIFEST_DIR,
-                    DEFAULT_QUOTE_PATH
-                ));
+                let default_path =
+                    PathBuf::from(format!("{}/{}", MANIFEST_DIR, DEFAULT_QUOTE_PATH));
                 let quote_string = read_to_string(default_path).expect(error_msg);
                 let processed = remove_prefix_if_found(&quote_string);
                 let quote_hex = hex::decode(processed).expect(error_msg);
@@ -86,9 +86,5 @@ pub fn get_quote(path: &Option<PathBuf>, hex: &Option<String>) -> Vec<u8> {
 }
 
 pub fn remove_prefix_if_found(h: &str) -> &str {
-    if h.starts_with("0x") {
-        &h[2..]
-    } else {
-        &h
-    }
+    if h.starts_with("0x") { &h[2..] } else { &h }
 }
