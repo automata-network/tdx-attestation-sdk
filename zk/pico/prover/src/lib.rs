@@ -21,29 +21,20 @@ pub fn prove(input_bytes: &[u8]) {
     let current_dir = std::env::current_dir().expect("Failed to get current directory");
     let output_path = current_dir.join("./evm_proof_data");
 
-    // Generate proof
-    // let proof = client
-    //     .prove_fast(stdin_builder)
-    //     .expect("Failed to generate proof");
+    let (cycles, public_buffer) = client.emulate(stdin_builder.clone());
+    log::info!("EVM Emulation Cycles: {}", cycles);
 
-    // // Decodes public values from the proof's public value stream.
-    // let public_buffer = proof.pv_stream.unwrap();
+    if std::env::var("DEV_MODE").is_err() || std::env::var("DEV_MODE").unwrap() == "" {
+        // Generate proof
+        let proving_key_path = output_path.join("vm_pk");
+        let need_setup = !proving_key_path.exists();
+        log::info!("EVM Proving Requires Trusted Setup: {}", need_setup);
+        client
+            .prove_evm(stdin_builder, need_setup, output_path.clone(), "kb")
+            .expect("Failed to generate proof");
 
-    let proving_key_path = output_path.join("vm_pk");
-    let need_setup = !proving_key_path.exists();
-    log::info!("EVM Proving Requires Trusted Setup: {}", need_setup);
-
-    client
-        .prove_evm(stdin_builder, need_setup, output_path.clone(), "kb")
-        .expect("Failed to generate proof");
-
-    log::info!("Proof generated successfully");
-
-    let public_buffer_hex_path = output_path.join("pv_file");
-    let public_buffer = hex::decode(
-        std::fs::read_to_string(public_buffer_hex_path).expect("Failed to read public buffer file"),
-    )
-    .expect("Failed to decode public buffer hex");
+        log::info!("Proof generated successfully");
+    }
 
     // manually parse the output
     let mut offset: usize = 0;
