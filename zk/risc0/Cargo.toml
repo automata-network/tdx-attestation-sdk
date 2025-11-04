@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = [ "core","host", "methods"]
+members = ["core", "host", "methods"]
 
 # Always optimize; building and running the guest takes much longer without optimization.
 [profile.dev]
@@ -12,3 +12,4 @@ lto = true
 
 [workspace.dependencies]
 dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", rev = "ba9d0beb2e3a30847526f8e3b2f6a929bdbc900f" }
+pccs-reader-rs = { git = "https://github.com/automata-network/pccs-reader-rs.git", branch = "updates/preston" }
