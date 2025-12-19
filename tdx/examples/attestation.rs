@@ -17,7 +17,7 @@ fn main() {
     // while the other takes in a Quote struct.
     // ================================================================================
     // tdx.verify_attestation_report(report).unwrap();
-    tdx.verify_attestation_report_raw(&mut report_raw.as_slice())
+    tdx.verify_attestation_report_raw(report_raw.as_slice())
         .unwrap();
 
     println!("Verification successful!");

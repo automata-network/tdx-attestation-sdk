@@ -1,18 +1,16 @@
 pub mod device;
 pub mod error;
-pub mod pccs;
 pub mod utils;
 
+use alloy::providers::ProviderBuilder;
+use automata_dcap_network_registry::Network;
 use dcap_rs::types::collateral::Collateral;
 use dcap_rs::types::quote::Quote;
 use dcap_rs::verify_dcap_quote;
 use error::{Result, TdxError};
-use pccs::enclave_id::get_enclave_identity;
-use pccs::fmspc_tcb::get_tcb_info;
-use pccs::pcs::{get_certificate_by_id, IPCSDao::CA};
+use pccs_reader_rs::{find_missing_collaterals_from_quote, CollateralError};
 use std::time::SystemTime;
 use tokio::runtime::Runtime;
-use utils::get_pck_fmspc_and_issuer;
 
 use crate::utils::der_to_pem_bytes;
 
@@ -47,56 +45,67 @@ impl Tdx {
         device.get_attestation_report_raw()
     }
 
-    pub fn verify_attestation_report_raw(&self, report: &mut &[u8]) -> Result<()> {
-        let quote = Quote::read(report)?;
-        self.verify_attestation_report(quote)?;
+    pub fn verify_attestation_report_raw(&self, raw_quote: &[u8]) -> Result<()> {
+        let collaterals = self.get_collaterals(raw_quote)?;
+        let quote = Quote::read(&mut &*raw_quote)?;
+        verify_dcap_quote(SystemTime::now(), collaterals, quote)?;
         Ok(())
     }
 
     /// This function verifies the chain of trust for the attestation report.
-    pub fn verify_attestation_report(&self, report: Quote) -> Result<()> {
-        // First retrieve all the required collaterals.
-        let rt = Runtime::new().unwrap();
-        let (root_ca, root_ca_crl) = rt.block_on(get_certificate_by_id(CA::ROOT))?;
-        if root_ca.is_empty() || root_ca_crl.is_empty() {
-            return Err(TdxError::Http("Root CA or CRL is empty".to_string()));
-        }
-
-        let (fmspc, pck_type) = get_pck_fmspc_and_issuer(&report)?;
-        // tcb_type: 0: SGX, 1: TDX
-        // version: TDX uses TcbInfoV3
-        let tcb_info = rt.block_on(get_tcb_info(1, &fmspc, 3))?;
-
-        let quote_version = report.header.version;
-        let qe_identity = rt.block_on(get_enclave_identity(quote_version.get() as u32))?;
-
-        let (signing_ca, _) = rt.block_on(get_certificate_by_id(CA::SIGNING))?;
-        if signing_ca.is_empty() {
-            return Err(TdxError::Http("TCB Signing CA is empty".to_string()));
-        }
-        let signing_ca_pem = der_to_pem_bytes(&signing_ca);
-        let root_ca_pem = der_to_pem_bytes(&root_ca);
-        let combined_pem = [signing_ca_pem, root_ca_pem].concat();
-
-        let (_, pck_crl) = rt.block_on(get_certificate_by_id(pck_type))?;
-        if pck_crl.is_empty() {
-            return Err(TdxError::Http("PCK CRL is empty".to_string()));
-        }
-
-        let tcb_info_json = std::str::from_utf8(&tcb_info)?;
-        let qe_identity_json = std::str::from_utf8(&qe_identity)?;
-
-        // Pass all the collaterals into a struct for verifying the quote.
-        let collaterals = Collateral::new(
-            &root_ca_crl,
-            &pck_crl,
-            &combined_pem,
-            &tcb_info_json,
-            &qe_identity_json,
-        )?;
-
+    pub fn verify_attestation_report(&self, raw_quote: &[u8], report: Quote) -> Result<()> {
+        let collaterals = self.get_collaterals(raw_quote)?;
         verify_dcap_quote(SystemTime::now(), collaterals, report)?;
         Ok(())
+    }
+
+    /// Retrieve the collaterals required to verify the attestation report.
+    pub fn get_collaterals(&self, raw_quote: &[u8]) -> Result<Collateral> {
+        let rt = Runtime::new().unwrap();
+
+        // Get network configuration (defaults to automata_testnet)
+        let network = Network::default_network(None)
+            .ok_or_else(|| TdxError::Http("Failed to get network config".to_string()))?;
+
+        // Get RPC endpoint from network registry
+        let rpc_url = network
+            .rpc_endpoints
+            .first()
+            .ok_or_else(|| TdxError::Http("No RPC endpoints available".to_string()))?
+            .parse()
+            .map_err(|e| TdxError::Http(format!("Failed to parse RPC URL: {}", e)))?;
+
+        let provider = ProviderBuilder::new().connect_http(rpc_url);
+
+        // Fetch collaterals from on-chain PCCS using the library
+        let collaterals = rt
+            .block_on(find_missing_collaterals_from_quote(
+                &provider,
+                None,  // deployment_version - uses default
+                raw_quote,
+                false, // don't print to disk
+                None,  // tcb_eval_num
+            ))
+            .map_err(|e| match e {
+                CollateralError::Missing(report) => {
+                    TdxError::Http(format!("Missing collaterals: {:?}", report))
+                }
+                CollateralError::Validation(msg) => TdxError::Http(format!("Validation error: {}", msg)),
+            })?;
+
+        // Convert library's Collaterals to dcap-rs Collateral
+        // The library returns DER-encoded certs, dcap-rs expects PEM for the cert chain
+        let signing_ca_pem = der_to_pem_bytes(&collaterals.tcb_signing_ca);
+        let root_ca_pem = der_to_pem_bytes(&collaterals.root_ca);
+        let combined_pem = [signing_ca_pem, root_ca_pem].concat();
+
+        Ok(Collateral::new(
+            &collaterals.root_ca_crl,
+            &collaterals.pck_crl,
+            &combined_pem,
+            &collaterals.tcb_info,
+            &collaterals.qe_identity,
+        )?)
     }
 }
 
@@ -184,7 +193,7 @@ pub mod c {
         report_len
     }
 
-    /// Ensure that generate_attestation_report() is called first to get the size of buf.
+    /// Ensure that tdx_generate_attestation_report() is called first to get the size of buf.
     /// Use this size to malloc enough space for the attestation report that will be transferred.
     #[no_mangle]
     pub extern "C" fn tdx_get_attestation_report_raw(buf: *mut u8) {
@@ -195,7 +204,7 @@ pub mod c {
             }
         };
         if bytes.len() == 0 {
-            panic!("Error: No attestation report found! Please call generate_attestation_report() first.");
+            panic!("Error: No attestation report found! Please call tdx_generate_attestation_report() first.");
         }
 
         unsafe {

@@ -1,9 +1,15 @@
 use crate::error::{Result, TdxError};
-use crate::CA;
 use dcap_rs::{types::quote::Quote, utils::cert_chain_processor};
 use rand::RngCore;
 use x509_parser::oid_registry::asn1_rs::{oid, FromDer, OctetString, Oid, Sequence};
 use x509_parser::prelude::{parse_x509_pem, X509Certificate};
+
+/// PCK Certificate Authority type
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PckCA {
+    Platform,
+    Processor,
+}
 /// Generates 64 bytes of random data
 /// Always guaranted to return something (ie, unwrap() can be safely called)
 pub fn generate_random_data() -> Option<[u8; 64]> {
@@ -17,7 +23,7 @@ pub fn der_to_pem_bytes(der_bytes: &[u8]) -> Vec<u8> {
     pem::encode(&pem_struct).into_bytes()
 }
 
-pub fn get_pck_fmspc_and_issuer(quote: &Quote) -> Result<(String, CA)> {
+pub fn get_pck_fmspc_and_issuer(quote: &Quote) -> Result<(String, PckCA)> {
     let raw_cert_data = &quote.signature.cert_data.cert_data;
 
     // // Cert Chain:
@@ -38,8 +44,8 @@ pub fn get_pck_fmspc_and_issuer(quote: &Quote) -> Result<(String, CA)> {
     let pck_issuer = get_x509_issuer_cn(&pck);
 
     let pck_ca = match pck_issuer.as_str() {
-        "Intel SGX PCK Platform CA" => CA::PLATFORM,
-        "Intel SGX PCK Processor CA" => CA::PROCESSOR,
+        "Intel SGX PCK Platform CA" => PckCA::Platform,
+        "Intel SGX PCK Processor CA" => PckCA::Processor,
         _ => panic!("Unknown PCK Issuer"),
     };
 
