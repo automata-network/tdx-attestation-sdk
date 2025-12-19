@@ -1,48 +1,24 @@
 pub mod device;
 pub mod error;
-pub mod pccs;
 pub mod utils;
 
-use dcap_rs::types::collaterals::IntelCollateral;
-use dcap_rs::types::quotes::version_4::QuoteV4;
-use dcap_rs::utils::quotes::version_4::verify_quote_dcapv4;
+use alloy::providers::ProviderBuilder;
+use automata_dcap_network_registry::Network;
+use dcap_rs::types::collateral::Collateral;
+use dcap_rs::types::quote::Quote;
+use dcap_rs::verify_dcap_quote;
 use error::{Result, TdxError};
-use pccs::enclave_id::get_enclave_identity;
-use pccs::fmspc_tcb::get_tcb_info;
-use pccs::pcs::{get_certificate_by_id, IPCSDao::CA};
-use std::panic;
+use pccs_reader_rs::{find_missing_collaterals_from_quote, CollateralError};
+use std::time::SystemTime;
 use tokio::runtime::Runtime;
-use utils::get_pck_fmspc_and_issuer;
+
+use crate::utils::der_to_pem_bytes;
 
 pub struct Tdx;
 
 impl Tdx {
     pub fn new() -> Self {
         Tdx
-    }
-
-    /// Retrieve an Attestation Report.
-    ///
-    /// Returns:
-    /// - A tuple containing the attestation report and the optional var data.
-    /// - The attestation report is a `QuoteV4` struct.
-    /// - The var data is an optional `Vec<u8>` containing the var data.
-    /// Var data is only available if the device resides on an Azure Confidential VM.
-    /// Var data provided by Azure can be used to verify the contents of the attestation report's report_data
-    pub fn get_attestation_report(&self) -> Result<(QuoteV4, Option<Vec<u8>>)> {
-        let device = device::Device::default()?;
-        device.get_attestation_report()
-    }
-
-    /// Retrieve an Attestation Report with options.
-    /// When available, users can pass in a 64 byte report data when requesting an attestation report.
-    /// This cannot be used on Azure Confidential VM.
-    pub fn get_attestation_report_with_options(
-        &self,
-        options: device::DeviceOptions,
-    ) -> Result<(QuoteV4, Option<Vec<u8>>)> {
-        let device = device::Device::new(options)?;
-        device.get_attestation_report()
     }
 
     /// Retrieve an Attestation Report in raw bytes.
@@ -69,58 +45,67 @@ impl Tdx {
         device.get_attestation_report_raw()
     }
 
+    pub fn verify_attestation_report_raw(&self, raw_quote: &[u8]) -> Result<()> {
+        let collaterals = self.get_collaterals(raw_quote)?;
+        let quote = Quote::read(&mut &*raw_quote)?;
+        verify_dcap_quote(SystemTime::now(), collaterals, quote)?;
+        Ok(())
+    }
+
     /// This function verifies the chain of trust for the attestation report.
-    pub fn verify_attestation_report(&self, report: &QuoteV4) -> Result<()> {
-        // First retrieve all the required collaterals.
+    pub fn verify_attestation_report(&self, raw_quote: &[u8], report: Quote) -> Result<()> {
+        let collaterals = self.get_collaterals(raw_quote)?;
+        verify_dcap_quote(SystemTime::now(), collaterals, report)?;
+        Ok(())
+    }
+
+    /// Retrieve the collaterals required to verify the attestation report.
+    pub fn get_collaterals(&self, raw_quote: &[u8]) -> Result<Collateral> {
         let rt = Runtime::new().unwrap();
-        let (root_ca, root_ca_crl) = rt.block_on(get_certificate_by_id(CA::ROOT))?;
-        if root_ca.is_empty() || root_ca_crl.is_empty() {
-            return Err(TdxError::Http("Root CA or CRL is empty".to_string()));
-        }
 
-        let (fmspc, pck_type) = get_pck_fmspc_and_issuer(report);
-        // tcb_type: 0: SGX, 1: TDX
-        // version: TDX uses TcbInfoV3
-        let tcb_info = rt.block_on(get_tcb_info(1, &fmspc, 3))?;
+        // Get network configuration (defaults to automata_testnet)
+        let network = Network::default_network(None)
+            .ok_or_else(|| TdxError::Http("Failed to get network config".to_string()))?;
 
-        let quote_version = report.header.version;
-        let qe_identity = rt.block_on(get_enclave_identity(quote_version as u32))?;
+        // Get RPC endpoint from network registry
+        let rpc_url = network
+            .rpc_endpoints
+            .first()
+            .ok_or_else(|| TdxError::Http("No RPC endpoints available".to_string()))?
+            .parse()
+            .map_err(|e| TdxError::Http(format!("Failed to parse RPC URL: {}", e)))?;
 
-        let (signing_ca, _) = rt.block_on(get_certificate_by_id(CA::SIGNING))?;
-        if signing_ca.is_empty() {
-            return Err(TdxError::Http("Signing CA is empty".to_string()));
-        }
+        let provider = ProviderBuilder::new().connect_http(rpc_url);
 
-        let (_, pck_crl) = rt.block_on(get_certificate_by_id(pck_type))?;
-        if pck_crl.is_empty() {
-            return Err(TdxError::Http("PCK CRL is empty".to_string()));
-        }
+        // Fetch collaterals from on-chain PCCS using the library
+        let collaterals = rt
+            .block_on(find_missing_collaterals_from_quote(
+                &provider,
+                None,  // deployment_version - uses default
+                raw_quote,
+                false, // don't print to disk
+                None,  // tcb_eval_num
+            ))
+            .map_err(|e| match e {
+                CollateralError::Missing(report) => {
+                    TdxError::Http(format!("Missing collaterals: {:?}", report))
+                }
+                CollateralError::Validation(msg) => TdxError::Http(format!("Validation error: {}", msg)),
+            })?;
 
-        // Pass all the collaterals into a struct for verifying the quote.
-        let current_time = chrono::Utc::now().timestamp() as u64;
-        let mut collaterals = IntelCollateral::new();
+        // Convert library's Collaterals to dcap-rs Collateral
+        // The library returns DER-encoded certs, dcap-rs expects PEM for the cert chain
+        let signing_ca_pem = der_to_pem_bytes(&collaterals.tcb_signing_ca);
+        let root_ca_pem = der_to_pem_bytes(&collaterals.root_ca);
+        let combined_pem = [signing_ca_pem, root_ca_pem].concat();
 
-        collaterals.set_tcbinfo_bytes(&tcb_info);
-        collaterals.set_qeidentity_bytes(&qe_identity);
-        collaterals.set_intel_root_ca_der(&root_ca);
-        collaterals.set_sgx_tcb_signing_der(&signing_ca);
-        collaterals.set_sgx_intel_root_ca_crl_der(&root_ca_crl);
-        match pck_type {
-            CA::PLATFORM => {
-                collaterals.set_sgx_platform_crl_der(&pck_crl);
-            }
-            CA::PROCESSOR => {
-                collaterals.set_sgx_processor_crl_der(&pck_crl);
-            }
-            _ => {
-                return Err(TdxError::Http("Unknown PCK Type".to_string()));
-            }
-        }
-
-        match panic::catch_unwind(|| verify_quote_dcapv4(report, &collaterals, current_time)) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(TdxError::Dcap(format!("DCAP Error: {:?}", e))),
-        }
+        Ok(Collateral::new(
+            &collaterals.root_ca_crl,
+            &collaterals.pck_crl,
+            &combined_pem,
+            &collaterals.tcb_info,
+            &collaterals.qe_identity,
+        )?)
     }
 }
 
@@ -208,7 +193,7 @@ pub mod c {
         report_len
     }
 
-    /// Ensure that generate_attestation_report() is called first to get the size of buf.
+    /// Ensure that tdx_generate_attestation_report() is called first to get the size of buf.
     /// Use this size to malloc enough space for the attestation report that will be transferred.
     #[no_mangle]
     pub extern "C" fn tdx_get_attestation_report_raw(buf: *mut u8) {
@@ -219,7 +204,7 @@ pub mod c {
             }
         };
         if bytes.len() == 0 {
-            panic!("Error: No attestation report found! Please call generate_attestation_report() first.");
+            panic!("Error: No attestation report found! Please call tdx_generate_attestation_report() first.");
         }
 
         unsafe {
