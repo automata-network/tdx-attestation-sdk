@@ -1,6 +1,7 @@
 use tdx::Tdx;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // Initialise a TDX object
     let tdx = Tdx::new();
 
@@ -10,7 +11,7 @@ fn main() {
     println!("Attestation Report: {:?}", report);
 
     // Verify the attestation report
-    tdx.verify_attestation_report(&report).unwrap();
+    tdx.verify_attestation_report(&report).await.unwrap();
 
     println!("Verification successful!");
 }

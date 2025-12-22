@@ -11,7 +11,6 @@ use pccs::enclave_id::get_enclave_identity;
 use pccs::fmspc_tcb::get_tcb_info;
 use pccs::pcs::{get_certificate_by_id, IPCSDao::CA};
 use std::panic;
-use tokio::runtime::Runtime;
 use utils::get_pck_fmspc_and_issuer;
 
 pub struct Tdx;
@@ -70,10 +69,11 @@ impl Tdx {
     }
 
     /// This function verifies the chain of trust for the attestation report.
-    pub fn verify_attestation_report(&self, report: &QuoteV4) -> Result<()> {
+    ///
+    /// Note: This method is async to avoid creating a nested Tokio runtime.
+    pub async fn verify_attestation_report(&self, report: &QuoteV4) -> Result<()> {
         // First retrieve all the required collaterals.
-        let rt = Runtime::new().unwrap();
-        let (root_ca, root_ca_crl) = rt.block_on(get_certificate_by_id(CA::ROOT))?;
+        let (root_ca, root_ca_crl) = get_certificate_by_id(CA::ROOT).await?;
         if root_ca.is_empty() || root_ca_crl.is_empty() {
             return Err(TdxError::Http("Root CA or CRL is empty".to_string()));
         }
@@ -81,17 +81,17 @@ impl Tdx {
         let (fmspc, pck_type) = get_pck_fmspc_and_issuer(report);
         // tcb_type: 0: SGX, 1: TDX
         // version: TDX uses TcbInfoV3
-        let tcb_info = rt.block_on(get_tcb_info(1, &fmspc, 3))?;
+        let tcb_info = get_tcb_info(1, &fmspc, 3).await?;
 
         let quote_version = report.header.version;
-        let qe_identity = rt.block_on(get_enclave_identity(quote_version as u32))?;
+        let qe_identity = get_enclave_identity(quote_version as u32).await?;
 
-        let (signing_ca, _) = rt.block_on(get_certificate_by_id(CA::SIGNING))?;
+        let (signing_ca, _) = get_certificate_by_id(CA::SIGNING).await?;
         if signing_ca.is_empty() {
             return Err(TdxError::Http("Signing CA is empty".to_string()));
         }
 
-        let (_, pck_crl) = rt.block_on(get_certificate_by_id(pck_type))?;
+        let (_, pck_crl) = get_certificate_by_id(pck_type).await?;
         if pck_crl.is_empty() {
             return Err(TdxError::Http("PCK CRL is empty".to_string()));
         }
