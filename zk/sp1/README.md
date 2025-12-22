@@ -10,8 +10,7 @@ Leveraging from the [SP1](https://github.com/succinctlabs/sp1) project template,
 
 ## Running the Project
 
-There are four main steps to run this project: build a program, execute a program, generate a core proof, and
-generate an EVM-compatible proof.
+There are four main steps to run this project: build a program, execute a program, generate a core proof, and generate an EVM-compatible proof.
 
 ### Build the Program
 
@@ -55,7 +54,7 @@ cargo prove vkey --elf elf/dcap-sp1-guest-program-elf
 
 ## Using the Prover Network
 
-We highly recommend using the Succinct prover network for any non-trivial programs or benchmarking purposes. For more information, see the [setup guide](https://docs.succinct.xyz/docs/generating-proofs/prover-network/usage).
+We highly recommend using the Succinct prover network for any non-trivial programs or benchmarking purposes. For more information, see [quickstart](hhttps://docs.succinct.xyz/docs/sp1/prover-network/quickstart).
 
 To get started, copy the example environment file:
 
@@ -63,12 +62,27 @@ To get started, copy the example environment file:
 cp .env.example .env
 ```
 
-Then, set the `SP1_PROVER` environment variable to `network` and set the `NETWORK_PRIVATE_KEY`
-environment variable to your whitelisted private key.
+Then, set the `NETWORK_PRIVATE_KEY` environment variable to your whitelisted private key.
 
 For example, to generate an EVM-compatible proof using the prover network, run the following
 command:
 
 ```sh
-SP1_PROVER=network NETWORK_PRIVATE_KEY=... cargo run --release
+NETWORK_PRIVATE_KEY=... cargo run --release
 ```
+
+### Prover Network Strategies
+
+The CLI currently supports the following network proving strategies:
+
+- **Auction Strategy:**
+
+This is the proving strategy selected by default. Requests proofs directly on the mainnet using an auctioning mechanism. You must make sure that your account is funded with $PROVE tokens.
+
+- **Reserved Strategy:**
+
+Uses network with reserved capacity upon agreement with Succinct. Read [reserved capacity](https://docs.succinct.xyz/docs/sp1/prover-network/reserved-capacity) from the docs to learn more.
+
+- **Hosted Strategy:**
+
+Requests proof from Succinct on-demand prover network.

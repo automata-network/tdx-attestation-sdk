@@ -1,13 +1,20 @@
 [package]
-name = "host"
+name = "dcap-risc0-cli"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+dcap-rs = { workspace = true }
+pccs-reader-rs = { workspace = true }
+core = { path = "../core" }
 methods = { path = "../methods" }
-risc0-zkvm = { version = "^2.2.0" }
+risc0-zkvm = { version = "^3.0.3" }
+risc0-ethereum-contracts = { git = "https://github.com/risc0/risc0-ethereum", tag = "v3.0.0" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-serde = "1.0"
+tracing = "0.1"
+log = { version = "0.4" }
+clap = { version = "4.0", features = ["derive", "env"] }
 hex = "0.4"
-dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", rev="d847b8f75a493640c4881bdf67775250b6baefab" }
-serde_json = "1.0"
+tokio = { version = "1.35", features = ["full"] }
+anyhow = "1.0.82"
+boundless-market = "^1.0"

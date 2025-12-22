@@ -1,104 +1,54 @@
 #![no_main]
+
 use std::io::Read;
 
-use risc0_zkvm::guest::env::{self};
-
-use dcap_rs::types::{
-    collaterals::IntelCollateral, quotes::version_3::QuoteV3, quotes::version_4::QuoteV4,
-    VerifiedOutput,
-};
-use dcap_rs::utils::cert::{hash_crl_keccak256, hash_x509_keccak256};
-use dcap_rs::utils::quotes::version_3::verify_quote_dcapv3;
-use dcap_rs::utils::quotes::version_4::verify_quote_dcapv4;
-use dcap_rs::utils::tcbinfo::{get_tcbinfov2_content_hash, get_tcbinfov3_content_hash};
-use dcap_rs::utils::enclave_identity::get_enclave_identityv2_content_hash;
-
+use risc0_zkvm::guest::env;
 risc0_zkvm::guest::entry!(main);
+
+use core::GuestInput;
+use std::time::{Duration, SystemTime};
+use dcap_rs::{
+    types::{collateral::Collateral, quote::Quote},
+    verify_dcap_quote,
+};
 
 fn main() {
     // read the values passed from host
-    let mut input = Vec::new();
-    env::stdin().read_to_end(&mut input).unwrap();
+    let mut input_bytes: Vec<u8> = vec![];
+    env::stdin().read_to_end(&mut input_bytes).unwrap();
 
-    // TODO: currently current_time does nothing since it can be spoofed by the host
-    // we can obtain an attested time from a trusted source that is bound to the input values and verify it
+    let input = GuestInput::sol_abi_decode(&input_bytes);
+    let quote = Quote::read(&mut input.raw_quote.as_slice()).unwrap();
+    let current_time = SystemTime::UNIX_EPOCH + Duration::from_secs(input.timestamp);
 
-    // deserialize the input
-    // read the fixed portion first
-    let current_time: u64 = u64::from_le_bytes(input[..8].try_into().unwrap());
-    let quote_len = u32::from_le_bytes(input[8..12].try_into().unwrap()) as usize;
-    let intel_collaterals_bytes_len =
-        u32::from_le_bytes(input[12..16].try_into().unwrap()) as usize;
+    let collaterals = &input.collateral;
 
-    // read the variable length fields
-    let mut offset = 16 as usize; // timestamp + quote_len + collateral_len
-    let quote_slice = &input[offset..offset + quote_len];
-    offset += quote_len;
-    let intel_collaterals_slice = &input[offset..offset + intel_collaterals_bytes_len];
-    offset += intel_collaterals_bytes_len;
-    assert!(offset == input.len());
+    // Pre-process the output
+    let tcb_content_hash = collaterals.tcb_info.get_tcb_info().unwrap().get_content_hash().unwrap();
+    let qeidentity_content_hash = collaterals.qe_identity.get_enclave_identity().unwrap().get_content_hash().unwrap();
+    let sgx_intel_root_ca_cert_hash = Collateral::get_cert_hash(
+        &collaterals.tcb_info_and_qe_identity_issuer_chain[1] // SGX Intel Root CA is the issuer of Intel TCB Signing Cert
+    ).unwrap();
+    let sgx_tcb_signing_cert_hash = Collateral::get_cert_hash(
+        &collaterals.tcb_info_and_qe_identity_issuer_chain[0] // Intel TCB Signing Cert is the first in the chain
+    ).unwrap();
+    let sgx_intel_root_ca_crl_hash = Collateral::get_crl_hash(
+        &collaterals.root_ca_crl
+    ).unwrap();
+    let sgx_pck_crl_hash = Collateral::get_crl_hash(
+        &collaterals.pck_crl
+    ).unwrap();
 
-    let intel_collaterals = IntelCollateral::from_bytes(&intel_collaterals_slice);
+    // Verify the quote
+    let output = verify_dcap_quote(
+        current_time, 
+        input.collateral, 
+        quote
+    ).unwrap();
 
-    // check either only platform or processor crls is provided. not both
-    let sgx_platform_crl_is_found = (&intel_collaterals.get_sgx_pck_platform_crl()).is_some();
-    let sgx_processor_crl_is_found = (&intel_collaterals.get_sgx_pck_processor_crl()).is_some();
-    assert!(
-        sgx_platform_crl_is_found != sgx_processor_crl_is_found,
-        "platform or processor crls only"
-    );
+    let serial_output = output.to_vec();
 
-    let verified_output: VerifiedOutput;
-
-    let quote_version = u16::from_le_bytes(input[16..18].try_into().unwrap());
-    match quote_version {
-        3 => {
-            let quote = QuoteV3::from_bytes(&quote_slice);
-            verified_output = verify_quote_dcapv3(&quote, &intel_collaterals, current_time);
-        }
-        4 => {
-            let quote = QuoteV4::from_bytes(&quote_slice);
-            verified_output = verify_quote_dcapv4(&quote, &intel_collaterals, current_time);
-        }
-        _ => {
-            panic!("Unsupported quote version");
-        }
-    }
-
-    // write public output to the journal
-    let serial_output = verified_output.to_bytes();
-    
-    let tcb_content_hash = match quote_version {
-        3 => {
-            let tcb_info_v2 = intel_collaterals.get_tcbinfov2();
-            get_tcbinfov2_content_hash(&tcb_info_v2)
-        },
-        4 => {
-            let tcb_info_v3 = intel_collaterals.get_tcbinfov3();
-            get_tcbinfov3_content_hash(&tcb_info_v3)
-        },
-        _ => panic!("Unsupported Quote Version")
-    };
-    
-    let qeidentity = intel_collaterals.get_qeidentityv2();
-    let qeidentity_content_hash = get_enclave_identityv2_content_hash(&qeidentity);
-    
-    let sgx_intel_root_ca_cert_hash =
-        hash_x509_keccak256(&intel_collaterals.get_sgx_intel_root_ca());
-    
-    let sgx_tcb_signing_cert_hash = hash_x509_keccak256(&intel_collaterals.get_sgx_tcb_signing());
-    
-    let sgx_intel_root_ca_crl_hash =
-        hash_crl_keccak256(&intel_collaterals.get_sgx_intel_root_ca_crl().unwrap());
-
-    let sgx_pck_crl;
-    if sgx_platform_crl_is_found {
-        sgx_pck_crl = intel_collaterals.get_sgx_pck_platform_crl().unwrap();
-    } else {
-        sgx_pck_crl = intel_collaterals.get_sgx_pck_processor_crl().unwrap();
-    }
-
-    let sgx_pck_crl_hash = hash_crl_keccak256(&sgx_pck_crl);
+    // Prep the journal
 
     // the journal output has the following format:
     // serial_output_len (2 bytes)
@@ -109,20 +59,20 @@ fn main() {
     // sgx_intel_root_ca_cert_hash
     // sgx_tcb_signing_cert_hash
     // sgx_tcb_intel_root_ca_crl_hash
-    // sgx_pck_platform_crl_hash or sgx_pck_processor_crl_hash
-    let journal_len = serial_output.len() + 226;
-    let mut journal_output: Vec<u8> = Vec::with_capacity(journal_len);
+    // sgx_pck_crl_hash or sgx_pck_processor_crl_hash
+
+    let mut program_output: Vec<u8> = vec![];
     let output_len: u16 = serial_output.len() as u16;
 
-    journal_output.extend_from_slice(&output_len.to_be_bytes());
-    journal_output.extend_from_slice(&serial_output);
-    journal_output.extend_from_slice(&current_time.to_be_bytes());
-    journal_output.extend_from_slice(&tcb_content_hash);
-    journal_output.extend_from_slice(&qeidentity_content_hash);
-    journal_output.extend_from_slice(&sgx_intel_root_ca_cert_hash);
-    journal_output.extend_from_slice(&sgx_tcb_signing_cert_hash);
-    journal_output.extend_from_slice(&sgx_intel_root_ca_crl_hash);
-    journal_output.extend_from_slice(&sgx_pck_crl_hash);
+    program_output.extend_from_slice(&output_len.to_be_bytes());
+    program_output.extend_from_slice(&serial_output);
+    program_output.extend_from_slice(&input.timestamp.to_be_bytes());
+    program_output.extend_from_slice(&tcb_content_hash);
+    program_output.extend_from_slice(&qeidentity_content_hash);
+    program_output.extend_from_slice(&sgx_intel_root_ca_cert_hash);
+    program_output.extend_from_slice(&sgx_tcb_signing_cert_hash);
+    program_output.extend_from_slice(&sgx_intel_root_ca_crl_hash);
+    program_output.extend_from_slice(&sgx_pck_crl_hash);
 
-    env::commit_slice(&journal_output);
+    env::commit_slice(&program_output);
 }
