@@ -30,7 +30,7 @@ pub fn get_pck_fmspc_and_issuer(quote: &QuoteV4) -> (String, CA) {
     let pck_ca = match pck_issuer.as_str() {
         "Intel SGX PCK Platform CA" => CA::PLATFORM,
         "Intel SGX PCK Processor CA" => CA::PROCESSOR,
-        _ => panic!("Unknown PCK Issuer"),
+        _ => return (String::new(), CA::PLATFORM), // Return default values instead of panicking
     };
 
     let fmspc_slice = extract_fmspc_from_extension(pck);
@@ -42,23 +42,27 @@ pub fn get_pck_fmspc_and_issuer(quote: &QuoteV4) -> (String, CA) {
 pub fn extract_fmspc_from_extension<'a>(cert: &'a X509Certificate<'a>) -> [u8; 6] {
     let sgx_extensions_bytes = cert
         .get_extension_unique(&oid!(1.2.840 .113741 .1 .13 .1))
-        .unwrap()
-        .unwrap()
+        .expect("Failed to get SGX extension")
+        .expect("SGX extension not found")
         .value;
 
-    let (_, sgx_extensions) = Sequence::from_der(sgx_extensions_bytes).unwrap();
+    let (_, sgx_extensions) = Sequence::from_der(sgx_extensions_bytes)
+        .expect("Failed to parse SGX extensions");
 
     let mut fmspc = [0; 6];
 
     let mut i = sgx_extensions.content.as_ref();
 
     while i.len() > 0 {
-        let (j, current_sequence) = Sequence::from_der(i).unwrap();
+        let (j, current_sequence) = Sequence::from_der(i)
+            .expect("Failed to parse sequence in SGX extensions");
         i = j;
-        let (j, current_oid) = Oid::from_der(current_sequence.content.as_ref()).unwrap();
+        let (j, current_oid) = Oid::from_der(current_sequence.content.as_ref())
+            .expect("Failed to parse OID in SGX extensions");
         match current_oid.to_id_string().as_str() {
             "1.2.840.113741.1.13.1.4" => {
-                let (k, fmspc_bytes) = OctetString::from_der(j).unwrap();
+                let (k, fmspc_bytes) = OctetString::from_der(j)
+                    .expect("Failed to parse FMSPC bytes");
                 assert_eq!(k.len(), 0);
                 fmspc.copy_from_slice(fmspc_bytes.as_ref());
                 break;
