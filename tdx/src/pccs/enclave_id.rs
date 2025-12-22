@@ -46,7 +46,7 @@ pub async fn get_enclave_identity(version: u32) -> Result<Vec<u8>> {
 
     if identity_str.len() == 0 || signature_bytes.len() == 0 {
         return Err(anyhow::Error::msg(format!(
-            "QEIdentity for TDX; Version: {} is missing and must be upserted to on-chain pccs",
+            "QEIdentity for TDX; Version: {} is missing and must be inserted to on-chain pccs",
             version
         )));
     }
