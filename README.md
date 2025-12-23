@@ -53,7 +53,7 @@ The [ImageID](https://dev.risczero.com/terminology#image-id) currently used for 
 The [VKEY](https://docs.succinct.xyz/verification/onchain/solidity-sdk.html?#finding-your-program-vkey) currently used for the DCAP SP1 Program is
 `0021feaf3f6c78429dac7756fac5cfed39b606e34603443409733e13a1cf06cc`.
 
-An useful DCAP zkVM clis can be found at [Automata DCAP zkVM CLI](https://github.com/automata-network/automata-dcap-zkvm-cli).
+A useful DCAP zkVM clis can be found at [Automata DCAP zkVM CLI](https://github.com/automata-network/automata-dcap-zkvm-cli).
 
 ### Verify Attestation off-chain
 Please follow the Intel official DCAP repo [SGXDataCenterAttestationPrimitives](https://github.com/intel/SGXDataCenterAttestationPrimitives) to perform the off-chain verification.
@@ -85,7 +85,7 @@ To get started, you need to have the following installed:
 * [SP1](https://docs.succinct.xyz/getting-started/install.html)
 * [Docker](https://docs.docker.com/get-started/get-docker/)
 
-***Note:*** *To request an whitelisted address, [complete the form here](https://docs.google.com/forms/d/e/1FAIpQLSd-X9uH7G0bvXH_kjptnQtNil8L4dumrVPpFE4t8Ci1XT1GaQ/viewform).*
+***Note:*** *To request a whitelisted address, [complete the form here](https://docs.google.com/forms/d/e/1FAIpQLSd-X9uH7G0bvXH_kjptnQtNil8L4dumrVPpFE4t8Ci1XT1GaQ/viewform).*
 
 With the SP1 Proving Network, you can produce a [Groth16 SNARK proof] or [Plonk SNARK proof] that is verifiable on-chain.
 You can get started by setting the following environment variables with your whitelisted address and associated Proving Network.
