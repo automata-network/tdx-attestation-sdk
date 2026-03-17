@@ -3,12 +3,7 @@ resolver = "2"
 members = [
     "tdx"
 ]
-exclude = [
-    "clis/dcap-bonsai-cli",
-    "clis/dcap-sp1-cli",
-    "zk/risc0",
-    "zk/sp1"
-]
+exclude = []
 
 [workspace.package]
 name = "automata-tdx-attestation-sdk"
