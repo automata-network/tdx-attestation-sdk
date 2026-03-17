@@ -7,7 +7,7 @@ use x509_parser::oid_registry::asn1_rs::{oid, FromDer, OctetString, Oid, Sequenc
 use x509_parser::prelude::*;
 
 /// Generates 64 bytes of random data
-/// Always guaranted to return something (ie, unwrap() can be safely called)
+/// Always guaranteed to return something (ie, unwrap() can be safely called)
 pub fn generate_random_data() -> Option<[u8; 64]> {
     let mut data = [0u8; 64];
     rand::thread_rng().fill_bytes(&mut data);
