@@ -1,8 +1,0 @@
-[package]
-version = "0.1.0"
-name = "dcap-sp1-guest-program"
-edition = "2021"
-
-[dependencies]
-dcap-rs.workspace = true
-sp1-zkvm.workspace = true
