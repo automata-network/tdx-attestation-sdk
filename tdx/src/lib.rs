@@ -10,7 +10,6 @@ use dcap_rs::verify_dcap_quote;
 use error::{Result, TdxError};
 use pccs_reader_rs::{find_missing_collaterals_from_quote, CollateralError};
 use std::time::SystemTime;
-use tokio::runtime::Runtime;
 
 use crate::utils::der_to_pem_bytes;
 
@@ -45,24 +44,15 @@ impl Tdx {
         device.get_attestation_report_raw()
     }
 
-    pub fn verify_attestation_report_raw(&self, raw_quote: &[u8]) -> Result<()> {
-        let collaterals = self.get_collaterals(raw_quote)?;
+    pub async fn verify_attestation_report_raw(&self, raw_quote: &[u8]) -> Result<()> {
+        let collaterals = self.get_collaterals(raw_quote).await?;
         let quote = Quote::read(&mut &*raw_quote)?;
         verify_dcap_quote(SystemTime::now(), collaterals, quote)?;
         Ok(())
     }
 
-    /// This function verifies the chain of trust for the attestation report.
-    pub fn verify_attestation_report(&self, raw_quote: &[u8], report: Quote) -> Result<()> {
-        let collaterals = self.get_collaterals(raw_quote)?;
-        verify_dcap_quote(SystemTime::now(), collaterals, report)?;
-        Ok(())
-    }
-
     /// Retrieve the collaterals required to verify the attestation report.
-    pub fn get_collaterals(&self, raw_quote: &[u8]) -> Result<Collateral> {
-        let rt = Runtime::new().unwrap();
-
+    pub async fn get_collaterals(&self, raw_quote: &[u8]) -> Result<Collateral> {
         // Get network configuration (defaults to automata_testnet)
         let network = Network::default_network(None)
             .ok_or_else(|| TdxError::Http("Failed to get network config".to_string()))?;
@@ -78,20 +68,20 @@ impl Tdx {
         let provider = ProviderBuilder::new().connect_http(rpc_url);
 
         // Fetch collaterals from on-chain PCCS using the library
-        let collaterals = rt
-            .block_on(find_missing_collaterals_from_quote(
-                &provider,
-                None,  // deployment_version - uses default
-                raw_quote,
-                false, // don't print to disk
-                None,  // tcb_eval_num
-            ))
-            .map_err(|e| match e {
-                CollateralError::Missing(report) => {
-                    TdxError::Http(format!("Missing collaterals: {:?}", report))
-                }
-                CollateralError::Validation(msg) => TdxError::Http(format!("Validation error: {}", msg)),
-            })?;
+        let collaterals = find_missing_collaterals_from_quote(
+            &provider, None, // deployment_version - uses default
+            raw_quote, false, // don't print to disk
+            None,  // tcb_eval_num
+        )
+        .await
+        .map_err(|e| match e {
+            CollateralError::Missing(report) => {
+                TdxError::Http(format!("Missing collaterals: {:?}", report))
+            }
+            CollateralError::Validation(msg) => {
+                TdxError::Http(format!("Validation error: {}", msg))
+            }
+        })?;
 
         // Convert library's Collaterals to dcap-rs Collateral
         // The library returns DER-encoded certs, dcap-rs expects PEM for the cert chain

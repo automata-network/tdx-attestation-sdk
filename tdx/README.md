@@ -15,13 +15,13 @@ The following cloud service providers (CSP) have support for Intel TDX:
 #### Azure
 - Instance Type: DCesv6-series, DCedsv6-series, ECesv6-series, ECedsv6-series
 - Operating System:  Ubuntu 24.04 Server (Confidential VM)- x64 Gen 2 image, Ubuntu 22.04 Server (Confidential VM) - x64 Gen 2 image.
-- Supported Region: West Europe, East US, West US, West US 3
+- Supported Regions: West Europe, East US, West US, West US 3
 
 #### Others
 - If you wish to use a CSP that is not listed above or run your own host, please ensure that the CSP or host is running the following specs:
   - Linux Kernel >= 6.7
   - Virtual Machine (VM) runs under KVM hypervisor 
-  - VM has access to `/sys/kernel/config/tsm/report` and able to create a temporary directory with sudo (eg. `sudo mkdir /sys/kernel/config/tsm/report/testing123`).
+  - VM has access to `/sys/kernel/config/tsm/report` and is able to create a temporary directory with sudo (eg. `sudo mkdir /sys/kernel/config/tsm/report/testing123`).
 > If you receive the error `mkdir: cannot create directory ‘testing123’: No such device or address`, it means that ConfigFS is not supported on your VM.
 
 ### Download Dependencies
@@ -100,20 +100,7 @@ function verifyAndAttestOnChain(bytes calldata rawQuote)
 ```
 It accepts the raw quote hex string to perform the on-chain verification, all collaterals will be fetched from the [Automata on-chain PCCS](https://github.com/automata-network/automata-on-chain-pccs).
 
-```solidity
-function verifyAndAttestWithZKProof(bytes calldata output, ZkCoProcessorType zkCoprocessor, bytes calldata proofBytes)
-```
-The first parameter represents the output of the zkVM, the second one is the zkVM type, and the third one is its corresponding proof. It supports two kinds of ZK technologies to perform the on-chain verification:
-
-* [Risc0](https://github.com/risc0/risc0)
-  - output: the journal of the Risc0 zkVM output
-  - zkCoprocessor: 1
-  - proofBytes: the seal of the Risc0 zkVM output
-
-* [SP1](https://github.com/succinctlabs/sp1)
-  - output: the execution result of the SP1 Prover output
-  - zkCoprocessor: 2
-  - proofBytes: the proof of the SP1 Prover output
+> **Note:** For ZK proof-based DCAP verification (Risc0 / SP1), please refer to [Automata DCAP Attestation](https://github.com/automata-network/automata-dcap-attestation/tree/staging).
 
 #### Verify Attestation off-chain
 Please follow Intel official DCAP repo [SGXDataCenterAttestationPrimitives](https://github.com/intel/SGXDataCenterAttestationPrimitives) to perform the off-chain verification.
