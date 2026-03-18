@@ -4,7 +4,7 @@ use coco_provider::{
     coco::{CocoDeviceType, ReportRequest},
     get_coco_provider, CocoProvider,
 };
-use dcap_rs::types::quotes::version_4::QuoteV4;
+
 use serde::Deserialize;
 
 const IMDS_QUOTE_URL: &str = "http://169.254.169.254/acc/tdquote";
@@ -44,11 +44,6 @@ impl Device {
         Ok(Device { options, provider })
     }
 
-    pub fn get_attestation_report(&self) -> Result<(QuoteV4, Option<Vec<u8>>)> {
-        let (raw_report, var_data) = self.get_attestation_report_raw()?;
-        Ok((QuoteV4::from_bytes(&raw_report), var_data))
-    }
-
     pub fn get_attestation_report_raw(&self) -> Result<(Vec<u8>, Option<Vec<u8>>)> {
         let report_data = match self.provider.device_type {
             CocoDeviceType::Tpm => {
@@ -77,7 +72,7 @@ impl Device {
             let quote = base64_url::decode(&quote_response.quote)?;
             return Ok((quote, response.var_data));
         }
-        // Otherwise we can just return the quote from the TPM as it is.
+        // Otherwise we can just return the quote from the device as it is.
         Ok((response.report, response.var_data))
     }
 }

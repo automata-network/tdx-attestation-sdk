@@ -3,12 +3,7 @@ resolver = "2"
 members = [
     "tdx"
 ]
-exclude = [
-    "clis/dcap-bonsai-cli",
-    "clis/dcap-sp1-cli",
-    "zk/risc0",
-    "zk/sp1"
-]
+exclude = []
 
 [workspace.package]
 name = "automata-tdx-attestation-sdk"
@@ -32,3 +27,4 @@ chrono = "0.4.40"
 tokio = { version = "1.44.1", features = ["rt-multi-thread"] }
 x509-parser = "0.15.1"
 clap = { version = "4.0", features = ["derive", "env"] }
+pem = "3.0.5"

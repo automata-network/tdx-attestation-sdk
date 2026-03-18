@@ -15,6 +15,7 @@ Automata TDX Attestation SDK is the most feature-complete SDK for Intel TDX deve
 
 * TDX package: it helps developers to generate the Intel TDX Quote in different cloud service providers (CSP).
 * Risc0 and Succinct ZK host and guest programs.
+Automata TDX Attestation SDK is a feature-complete SDK for Intel TDX development. It helps developers to generate the Intel TDX Quote in different cloud service providers (CSP).
 
 ### Environment Preparation
 Refer to [TDX package](tdx/README.md) to set up the Intel TDX CVM in different cloud service providers (CSP).
@@ -24,27 +25,12 @@ Use [TDX package](tdx/README.md) to generate the Intel TDX Quote, you can find a
 
 ## Intel TDX Quote Verification
 ### Verify Attestation on-chain
-In [Automata DCAP Attestation](https://github.com/automata-network/automata-dcap-attestation), We provide two ways to verify the Intel TDX quote on-chain:
+In [Automata DCAP Attestation](https://github.com/automata-network/automata-dcap-attestation), We provide the following way to verify the Intel TDX quote on-chain:
 
 ```solidity
 function verifyAndAttestOnChain(bytes calldata rawQuote)
 ```
 It accepts the raw quote hex string to perform the on-chain verification, all collaterals will be fetched from the [Automata on-chain PCCS](https://github.com/automata-network/automata-on-chain-pccs).
-
-```solidity
-function verifyAndAttestWithZKProof(bytes calldata output, ZkCoProcessorType zkCoprocessor, bytes calldata proofBytes)
-```
-The first parameter represents the output of the zkVM, the second one is the zkVM type, and the third one is its corresponding proof. It supports two kinds of ZK technologies to perform the on-chain verification:
-
-* [Risc0](https://github.com/risc0/risc0)
-  - output: the journal of the Risc0 zkVM output
-  - zkCoprocessor: 1
-  - proofBytes: the seal of the Risc0 zkVM output
-
-* [SP1](https://github.com/succinctlabs/sp1)
-  - output: the execution result of the SP1 Prover output
-  - zkCoprocessor: 2
-  - proofBytes: the proof of the SP1 Prover output
 
 The on-chain verification contract has been deployed to Automata Testnet at [0x95175096a9B74165BE0ac84260cc14Fc1c0EF5FF](https://explorer-testnet.ata.network/address/0x95175096a9B74165BE0ac84260cc14Fc1c0EF5FF).
 
@@ -54,6 +40,7 @@ The [VKEY](https://docs.succinct.xyz/verification/onchain/solidity-sdk.html?#fin
 `0021feaf3f6c78429dac7756fac5cfed39b606e34603443409733e13a1cf06cc`.
 
 A useful DCAP zkVM CLI can be found at [Automata DCAP zkVM CLI](https://github.com/automata-network/automata-dcap-zkvm-cli).
+> **Note:** For ZK proof-based DCAP verification (Risc0 / SP1), please refer to [Automata DCAP Attestation](https://github.com/automata-network/automata-dcap-attestation/tree/staging).
 
 ### Verify Attestation off-chain
 Please follow the Intel official DCAP repo [SGXDataCenterAttestationPrimitives](https://github.com/intel/SGXDataCenterAttestationPrimitives) to perform the off-chain verification.
