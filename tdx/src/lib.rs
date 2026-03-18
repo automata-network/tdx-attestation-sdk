@@ -114,7 +114,7 @@ pub mod c {
     /// Use this function to generate the attestation report with default settings.
     /// Returns the size of the report, which you can use to malloc a buffer of suitable size
     /// before you call get_attestation_report_raw().
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub extern "C" fn tdx_generate_attestation_report() -> usize {
         let tdx = Tdx::new();
 
@@ -146,7 +146,7 @@ pub mod c {
     /// Use this function to generate the attestation report with options.
     /// Returns the size of the report, which you can use to malloc a buffer of suitable size
     /// before you call get_attestation_report_raw().
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub extern "C" fn tdx_generate_attestation_report_with_options(report_data: *mut u8) -> usize {
         let tdx = Tdx::new();
         let mut rust_report_data: [u8; 64] = [0; 64];
@@ -185,7 +185,7 @@ pub mod c {
 
     /// Ensure that tdx_generate_attestation_report() is called first to get the size of buf.
     /// Use this size to malloc enough space for the attestation report that will be transferred.
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub extern "C" fn tdx_get_attestation_report_raw(buf: *mut u8) {
         let bytes = match ATTESTATION_REPORT.lock() {
             Ok(t) => t.clone(),
@@ -204,7 +204,7 @@ pub mod c {
 
     /// Retrieve the length of var_data. Please call this only after you have called
     /// generate_attestation_report(). If var_data is empty, this function will return 0.
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub extern "C" fn tdx_get_var_data_len() -> usize {
         let length = match VAR_DATA.lock() {
             Ok(t) => t.len(),
@@ -217,7 +217,7 @@ pub mod c {
 
     /// Retrieve var_data. Please call this only after you have called
     /// get_var_data_len() to malloc a buffer of an appropriate size.
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub extern "C" fn tdx_get_var_data(buf: *mut u8) {
         let bytes = match VAR_DATA.lock() {
             Ok(t) => t.clone(),
