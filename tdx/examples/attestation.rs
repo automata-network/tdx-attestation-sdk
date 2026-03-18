@@ -1,3 +1,4 @@
+use dcap_rs::types::quote::Quote;
 use tdx::Tdx;
 
 #[tokio::main]
@@ -6,12 +7,17 @@ async fn main() {
     let tdx = Tdx::new();
 
     // Retrieve an attestation report with default options passed to the hardware device
-    let (report, _) = tdx.get_attestation_report().unwrap();
+    // ================================================================================
+    let (report_raw, _) = tdx.get_attestation_report_raw().unwrap();
+    let report = Quote::read(&mut report_raw.as_slice()).unwrap();
 
     println!("Attestation Report: {:?}", report);
 
     // Verify the attestation report
-    tdx.verify_attestation_report(&report).await.unwrap();
+    // ================================================================================
+    tdx.verify_attestation_report_raw(report_raw.as_slice())
+        .await
+        .unwrap();
 
     println!("Verification successful!");
 }

@@ -72,7 +72,7 @@ let tdx = Tdx::new();
 ### Generate Attestation
 To generate an attestation with default options, you can do so like this:
 ```rust
-let (report, _) = tdx.get_attestation_report()?;
+let (report, _) = tdx.get_attestation_report_raw()?;
 ```
 
 If you wish to customise options for the attestation report, you can do something like this:

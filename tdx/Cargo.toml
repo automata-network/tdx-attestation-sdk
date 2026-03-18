@@ -21,7 +21,6 @@ cbindgen = "0.29.0"
 lto = true
 
 [dependencies]
-dcap-rs.workspace = true
 rand.workspace = true
 ureq.workspace = true
 base64-url.workspace = true
@@ -33,6 +32,12 @@ chrono.workspace = true
 tokio.workspace = true
 x509-parser.workspace = true
 clap.workspace = true
+pem.workspace = true
 
 once_cell = { version = "1.20.2", optional=true }
+dcap-rs = { git = "https://github.com/automata-network/dcap-rs", rev="ee2b89d" }
 coco-provider = { git = "https://github.com/automata-network/coco-provider-sdk", optional = true, default-features = false }
+
+# Automata DCAP libraries for on-chain PCCS, v1.1
+pccs-reader-rs = { git = "https://github.com/automata-network/automata-dcap-attestation", rev = "3ee9b7b" }
+automata-dcap-network-registry = { git = "https://github.com/automata-network/automata-dcap-attestation", rev = "3ee9b7b" }
