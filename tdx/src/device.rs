@@ -77,7 +77,7 @@ impl Device {
             let quote = base64_url::decode(&quote_response.quote)?;
             return Ok((quote, response.var_data));
         }
-        // Otherwise we can just return the quote from the TPM as it is.
+        // Otherwise we can just return the quote from the device as it is.
         Ok((response.report, response.var_data))
     }
 }
