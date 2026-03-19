@@ -15,7 +15,7 @@ async fn main() {
 
     // Verify the attestation report
     // ================================================================================
-    tdx.verify_attestation_report_raw(report_raw.as_slice())
+    tdx.verify_attestation_report_raw(&report_raw)
         .await
         .unwrap();
 
