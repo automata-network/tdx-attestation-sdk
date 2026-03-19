@@ -101,9 +101,8 @@ impl Tdx {
 
 #[cfg(feature = "clib")]
 pub mod c {
-    use once_cell::sync::Lazy;
     use std::ptr::copy_nonoverlapping;
-    use std::sync::Mutex;
+    use std::sync::{LazyLock, Mutex};
 
     use super::device::DeviceOptions;
     use super::Tdx;
@@ -116,8 +115,8 @@ pub mod c {
     pub const TDX_ERR_ATTESTATION_FAILED: i32 = -4;
     pub const TDX_ERR_LOCK_POISONED: i32 = -5;
 
-    static ATTESTATION_REPORT: Lazy<Mutex<Vec<u8>>> = Lazy::new(|| Mutex::new(Vec::new()));
-    static VAR_DATA: Lazy<Mutex<Vec<u8>>> = Lazy::new(|| Mutex::new(Vec::new()));
+    static ATTESTATION_REPORT: LazyLock<Mutex<Vec<u8>>> = LazyLock::new(|| Mutex::new(Vec::new()));
+    static VAR_DATA: LazyLock<Mutex<Vec<u8>>> = LazyLock::new(|| Mutex::new(Vec::new()));
 
     /// Helper to store report and var_data into the global statics.
     /// Returns the report length on success, or a negative error code on failure.
@@ -168,10 +167,11 @@ pub mod c {
         let device_options = DeviceOptions {
             report_data: Some(rust_report_data),
         };
-        let (report_bytes, var_data) = match tdx.get_attestation_report_raw_with_options(device_options) {
-            Ok(r) => r,
-            Err(_) => return TDX_ERR_ATTESTATION_FAILED,
-        };
+        let (report_bytes, var_data) =
+            match tdx.get_attestation_report_raw_with_options(device_options) {
+                Ok(r) => r,
+                Err(_) => return TDX_ERR_ATTESTATION_FAILED,
+            };
         store_report(report_bytes, var_data)
     }
 

@@ -46,7 +46,7 @@ pub fn get_pck_fmspc_and_issuer(quote: &Quote) -> Result<(String, PckCA)> {
     let pck_ca = match pck_issuer.as_str() {
         "Intel SGX PCK Platform CA" => PckCA::Platform,
         "Intel SGX PCK Processor CA" => PckCA::Processor,
-        _ => panic!("Unknown PCK Issuer"),
+        _ => return Err(TdxError::Dcap(format!("Unknown PCK Issuer: {pck_issuer}"))),
     };
 
     let fmspc_slice = extract_fmspc_from_extension(&pck);
