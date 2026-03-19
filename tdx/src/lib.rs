@@ -124,12 +124,18 @@ pub mod c {
         let report_len = report_bytes.len() as i32;
         match ATTESTATION_REPORT.lock() {
             Ok(mut t) => *t = report_bytes,
-            Err(_) => return TDX_ERR_LOCK_POISONED,
+            Err(e) => {
+                eprintln!("tdx: attestation report lock poisoned: {e}");
+                return TDX_ERR_LOCK_POISONED;
+            }
         }
         if let Some(v) = var_data {
             match VAR_DATA.lock() {
                 Ok(mut t) => *t = v,
-                Err(_) => return TDX_ERR_LOCK_POISONED,
+                Err(e) => {
+                    eprintln!("tdx: var data lock poisoned: {e}");
+                    return TDX_ERR_LOCK_POISONED;
+                }
             }
         }
         report_len
@@ -145,7 +151,10 @@ pub mod c {
         let tdx = Tdx::new();
         let (report_bytes, var_data) = match tdx.get_attestation_report_raw() {
             Ok(r) => r,
-            Err(_) => return TDX_ERR_ATTESTATION_FAILED,
+            Err(e) => {
+                eprintln!("tdx: failed to get attestation report: {e}");
+                return TDX_ERR_ATTESTATION_FAILED;
+            }
         };
         store_report(report_bytes, var_data)
     }
@@ -157,6 +166,7 @@ pub mod c {
     #[unsafe(no_mangle)]
     pub extern "C" fn tdx_generate_attestation_report_with_options(report_data: *const u8) -> i32 {
         if report_data.is_null() {
+            eprintln!("tdx: report_data is null");
             return TDX_ERR_NULL_POINTER;
         }
         let tdx = Tdx::new();
@@ -170,7 +180,10 @@ pub mod c {
         let (report_bytes, var_data) =
             match tdx.get_attestation_report_raw_with_options(device_options) {
                 Ok(r) => r,
-                Err(_) => return TDX_ERR_ATTESTATION_FAILED,
+                Err(e) => {
+                    eprintln!("tdx: failed to get attestation report with options: {e}");
+                    return TDX_ERR_ATTESTATION_FAILED;
+                }
             };
         store_report(report_bytes, var_data)
     }
@@ -188,16 +201,24 @@ pub mod c {
     #[unsafe(no_mangle)]
     pub extern "C" fn tdx_get_attestation_report_raw(buf: *mut u8, buf_len: usize) -> i32 {
         if buf.is_null() {
+            eprintln!("tdx: tdx_get_attestation_report_raw: buf is null");
             return TDX_ERR_NULL_POINTER;
         }
         let bytes = match ATTESTATION_REPORT.lock() {
             Ok(t) => t.clone(),
-            Err(_) => return TDX_ERR_LOCK_POISONED,
+            Err(e) => {
+                eprintln!("tdx: attestation report lock poisoned: {e}");
+                return TDX_ERR_LOCK_POISONED;
+            }
         };
         if bytes.is_empty() {
+            eprintln!(
+                "tdx: no attestation report found, call tdx_generate_attestation_report() first"
+            );
             return TDX_ERR_NO_REPORT;
         }
         if buf_len < bytes.len() {
+            eprintln!("tdx: buffer too small ({buf_len} < {})", bytes.len());
             return TDX_ERR_BUFFER_TOO_SMALL;
         }
         unsafe {
@@ -214,7 +235,10 @@ pub mod c {
     pub extern "C" fn tdx_get_var_data_len() -> i32 {
         match VAR_DATA.lock() {
             Ok(t) => t.len() as i32,
-            Err(_) => TDX_ERR_LOCK_POISONED,
+            Err(e) => {
+                eprintln!("tdx: var data lock poisoned: {e}");
+                TDX_ERR_LOCK_POISONED
+            }
         }
     }
 
@@ -227,16 +251,22 @@ pub mod c {
     #[unsafe(no_mangle)]
     pub extern "C" fn tdx_get_var_data(buf: *mut u8, buf_len: usize) -> i32 {
         if buf.is_null() {
+            eprintln!("tdx: tdx_get_var_data: buf is null");
             return TDX_ERR_NULL_POINTER;
         }
         let bytes = match VAR_DATA.lock() {
             Ok(t) => t.clone(),
-            Err(_) => return TDX_ERR_LOCK_POISONED,
+            Err(e) => {
+                eprintln!("tdx: var data lock poisoned: {e}");
+                return TDX_ERR_LOCK_POISONED;
+            }
         };
         if bytes.is_empty() {
+            eprintln!("tdx: no var data found, call tdx_generate_attestation_report() first");
             return TDX_ERR_NO_REPORT;
         }
         if buf_len < bytes.len() {
+            eprintln!("tdx: buffer too small ({buf_len} < {})", bytes.len());
             return TDX_ERR_BUFFER_TOO_SMALL;
         }
         unsafe {
