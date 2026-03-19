@@ -108,46 +108,58 @@ pub mod c {
     use super::device::DeviceOptions;
     use super::Tdx;
 
+    /// Error codes returned by C FFI functions.
+    pub const TDX_OK: i32 = 0;
+    pub const TDX_ERR_NULL_POINTER: i32 = -1;
+    pub const TDX_ERR_BUFFER_TOO_SMALL: i32 = -2;
+    pub const TDX_ERR_NO_REPORT: i32 = -3;
+    pub const TDX_ERR_ATTESTATION_FAILED: i32 = -4;
+    pub const TDX_ERR_LOCK_POISONED: i32 = -5;
+
     static ATTESTATION_REPORT: Lazy<Mutex<Vec<u8>>> = Lazy::new(|| Mutex::new(Vec::new()));
     static VAR_DATA: Lazy<Mutex<Vec<u8>>> = Lazy::new(|| Mutex::new(Vec::new()));
 
-    /// Use this function to generate the attestation report with default settings.
-    /// Returns the size of the report, which you can use to malloc a buffer of suitable size
-    /// before you call get_attestation_report_raw().
-    #[unsafe(no_mangle)]
-    pub extern "C" fn tdx_generate_attestation_report() -> usize {
-        let tdx = Tdx::new();
-
-        let (report_bytes, var_data) = tdx.get_attestation_report_raw().unwrap();
-        let report_len = report_bytes.len();
-        let var_data_len = var_data.as_ref().map_or(0, |v| v.len());
+    /// Helper to store report and var_data into the global statics.
+    /// Returns the report length on success, or a negative error code on failure.
+    fn store_report(report_bytes: Vec<u8>, var_data: Option<Vec<u8>>) -> i32 {
+        let report_len = report_bytes.len() as i32;
         match ATTESTATION_REPORT.lock() {
-            Ok(mut t) => {
-                *t = report_bytes;
-            }
-            Err(e) => {
-                panic!("Error: {:?}", e);
-            }
+            Ok(mut t) => *t = report_bytes,
+            Err(_) => return TDX_ERR_LOCK_POISONED,
         }
-
-        if var_data_len > 0 {
+        if let Some(v) = var_data {
             match VAR_DATA.lock() {
-                Ok(mut t) => {
-                    *t = var_data.unwrap();
-                }
-                Err(e) => {
-                    panic!("Error: {:?}", e);
-                }
+                Ok(mut t) => *t = v,
+                Err(_) => return TDX_ERR_LOCK_POISONED,
             }
         }
         report_len
     }
 
-    /// Use this function to generate the attestation report with options.
-    /// Returns the size of the report, which you can use to malloc a buffer of suitable size
-    /// before you call get_attestation_report_raw().
+    /// Generate the attestation report with default settings.
+    ///
+    /// Returns the size of the report on success (>= 0), which you can use to malloc
+    /// a buffer of suitable size before calling `tdx_get_attestation_report_raw()`.
+    /// Returns a negative error code on failure.
     #[unsafe(no_mangle)]
-    pub extern "C" fn tdx_generate_attestation_report_with_options(report_data: *mut u8) -> usize {
+    pub extern "C" fn tdx_generate_attestation_report() -> i32 {
+        let tdx = Tdx::new();
+        let (report_bytes, var_data) = match tdx.get_attestation_report_raw() {
+            Ok(r) => r,
+            Err(_) => return TDX_ERR_ATTESTATION_FAILED,
+        };
+        store_report(report_bytes, var_data)
+    }
+
+    /// Generate the attestation report with custom report_data (64 bytes).
+    ///
+    /// `report_data` must point to a buffer of at least 64 bytes.
+    /// Returns the size of the report on success (>= 0), or a negative error code on failure.
+    #[unsafe(no_mangle)]
+    pub extern "C" fn tdx_generate_attestation_report_with_options(report_data: *const u8) -> i32 {
+        if report_data.is_null() {
+            return TDX_ERR_NULL_POINTER;
+        }
         let tdx = Tdx::new();
         let mut rust_report_data: [u8; 64] = [0; 64];
         unsafe {
@@ -156,81 +168,80 @@ pub mod c {
         let device_options = DeviceOptions {
             report_data: Some(rust_report_data),
         };
-        let (report_bytes, var_data) = tdx
-            .get_attestation_report_raw_with_options(device_options)
-            .unwrap();
-        let report_len = report_bytes.len();
-        let var_data_len = var_data.as_ref().map_or(0, |v| v.len());
-        match ATTESTATION_REPORT.lock() {
-            Ok(mut t) => {
-                *t = report_bytes;
-            }
-            Err(e) => {
-                panic!("Error: {:?}", e);
-            }
-        }
-
-        if var_data_len > 0 {
-            match VAR_DATA.lock() {
-                Ok(mut t) => {
-                    *t = var_data.unwrap();
-                }
-                Err(e) => {
-                    panic!("Error: {:?}", e);
-                }
-            }
-        }
-        report_len
+        let (report_bytes, var_data) = match tdx.get_attestation_report_raw_with_options(device_options) {
+            Ok(r) => r,
+            Err(_) => return TDX_ERR_ATTESTATION_FAILED,
+        };
+        store_report(report_bytes, var_data)
     }
 
-    /// Ensure that tdx_generate_attestation_report() is called first to get the size of buf.
-    /// Use this size to malloc enough space for the attestation report that will be transferred.
+    /// Copy the attestation report into the provided buffer.
+    ///
+    /// `buf` must point to a buffer of at least `buf_len` bytes.
+    /// Call `tdx_generate_attestation_report()` first to obtain the required size.
+    ///
+    /// Returns the number of bytes written on success (>= 0), or a negative error code:
+    /// - `TDX_ERR_NULL_POINTER` if `buf` is null
+    /// - `TDX_ERR_BUFFER_TOO_SMALL` if `buf_len` is smaller than the report
+    /// - `TDX_ERR_NO_REPORT` if no report has been generated yet
+    /// - `TDX_ERR_LOCK_POISONED` if the internal mutex is poisoned
     #[unsafe(no_mangle)]
-    pub extern "C" fn tdx_get_attestation_report_raw(buf: *mut u8) {
+    pub extern "C" fn tdx_get_attestation_report_raw(buf: *mut u8, buf_len: usize) -> i32 {
+        if buf.is_null() {
+            return TDX_ERR_NULL_POINTER;
+        }
         let bytes = match ATTESTATION_REPORT.lock() {
             Ok(t) => t.clone(),
-            Err(e) => {
-                panic!("Error: {:?}", e);
-            }
+            Err(_) => return TDX_ERR_LOCK_POISONED,
         };
-        if bytes.len() == 0 {
-            panic!("Error: No attestation report found! Please call tdx_generate_attestation_report() first.");
+        if bytes.is_empty() {
+            return TDX_ERR_NO_REPORT;
         }
-
+        if buf_len < bytes.len() {
+            return TDX_ERR_BUFFER_TOO_SMALL;
+        }
         unsafe {
             copy_nonoverlapping(bytes.as_ptr(), buf, bytes.len());
         }
+        bytes.len() as i32
     }
 
-    /// Retrieve the length of var_data. Please call this only after you have called
-    /// generate_attestation_report(). If var_data is empty, this function will return 0.
+    /// Retrieve the length of var_data.
+    ///
+    /// Call this only after `tdx_generate_attestation_report()`.
+    /// Returns 0 if var_data is empty, or a negative error code on failure.
     #[unsafe(no_mangle)]
-    pub extern "C" fn tdx_get_var_data_len() -> usize {
-        let length = match VAR_DATA.lock() {
-            Ok(t) => t.len(),
-            Err(e) => {
-                panic!("Error: {:?}", e);
-            }
-        };
-        length
+    pub extern "C" fn tdx_get_var_data_len() -> i32 {
+        match VAR_DATA.lock() {
+            Ok(t) => t.len() as i32,
+            Err(_) => TDX_ERR_LOCK_POISONED,
+        }
     }
 
-    /// Retrieve var_data. Please call this only after you have called
-    /// get_var_data_len() to malloc a buffer of an appropriate size.
+    /// Copy var_data into the provided buffer.
+    ///
+    /// `buf` must point to a buffer of at least `buf_len` bytes.
+    /// Call `tdx_get_var_data_len()` first to obtain the required size.
+    ///
+    /// Returns the number of bytes written on success (>= 0), or a negative error code.
     #[unsafe(no_mangle)]
-    pub extern "C" fn tdx_get_var_data(buf: *mut u8) {
+    pub extern "C" fn tdx_get_var_data(buf: *mut u8, buf_len: usize) -> i32 {
+        if buf.is_null() {
+            return TDX_ERR_NULL_POINTER;
+        }
         let bytes = match VAR_DATA.lock() {
             Ok(t) => t.clone(),
-            Err(e) => {
-                panic!("Error: {:?}", e);
-            }
+            Err(_) => return TDX_ERR_LOCK_POISONED,
         };
-        if bytes.len() == 0 {
-            panic!("Error: No var data found! Please call generate_attestation_report() first.");
+        if bytes.is_empty() {
+            return TDX_ERR_NO_REPORT;
         }
-
+        if buf_len < bytes.len() {
+            return TDX_ERR_BUFFER_TOO_SMALL;
+        }
         unsafe {
             copy_nonoverlapping(bytes.as_ptr(), buf, bytes.len());
         }
+        bytes.len() as i32
     }
 }
