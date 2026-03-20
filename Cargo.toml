@@ -14,8 +14,6 @@ homepage = "https://www.ata.network/"
 license = "Apache-2.0"
 
 [workspace.dependencies]
-dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", rev="d847b8f75a493640c4881bdf67775250b6baefab" }
-
 base64-url = "3.0.0"
 hex = "0.4.3"
 rand = "0.8.5"
