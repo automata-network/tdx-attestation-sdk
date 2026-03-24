@@ -26,10 +26,10 @@ pub fn der_to_pem_bytes(der_bytes: &[u8]) -> Vec<u8> {
 pub fn get_pck_fmspc_and_issuer(quote: &Quote) -> Result<(String, PckCA)> {
     let raw_cert_data = &quote.signature.cert_data.cert_data;
 
-    // // Cert Chain:
-    // // [0]: pck ->
-    // // [1]: pck ca ->
-    // // [2]: root ca
+    // Cert Chain:
+    // [0]: pck ->
+    // [1]: pck ca ->
+    // [2]: root ca
     let ranges = cert_chain_processor::find_certificate_ranges(raw_cert_data);
     if ranges.is_empty() {
         return Err(TdxError::Dcap("No certificates found".to_string()));
@@ -41,7 +41,7 @@ pub fn get_pck_fmspc_and_issuer(quote: &Quote) -> Result<(String, PckCA)> {
         .parse_x509()
         .map_err(|e| TdxError::X509(format!("x509 error: {e}")))?;
 
-    let pck_issuer = get_x509_issuer_cn(&pck);
+    let pck_issuer = get_x509_issuer_cn(&pck)?;
 
     let pck_ca = match pck_issuer.as_str() {
         "Intel SGX PCK Platform CA" => PckCA::Platform,
@@ -49,45 +49,57 @@ pub fn get_pck_fmspc_and_issuer(quote: &Quote) -> Result<(String, PckCA)> {
         _ => return Err(TdxError::Dcap(format!("Unknown PCK Issuer: {pck_issuer}"))),
     };
 
-    let fmspc_slice = extract_fmspc_from_extension(&pck);
+    let fmspc_slice = extract_fmspc_from_extension(&pck)?;
     let fmspc = hex::encode(fmspc_slice);
 
     Ok((fmspc, pck_ca))
 }
 
-fn get_x509_issuer_cn<'a>(cert: &'a X509Certificate<'a>) -> String {
+fn get_x509_issuer_cn<'a>(cert: &'a X509Certificate<'a>) -> Result<String> {
     let issuer = cert.issuer();
-    let cn = issuer.iter_common_name().next().unwrap();
-    cn.as_str().unwrap().to_string()
+    let cn = issuer
+        .iter_common_name()
+        .next()
+        .ok_or_else(|| TdxError::X509("Certificate issuer has no Common Name".to_string()))?;
+    let cn_str = cn
+        .as_str()
+        .map_err(|e| TdxError::X509(format!("Issuer CN is not valid UTF-8: {e}")))?;
+    Ok(cn_str.to_string())
 }
 
-fn extract_fmspc_from_extension<'a>(cert: &'a X509Certificate<'a>) -> [u8; 6] {
+fn extract_fmspc_from_extension<'a>(cert: &'a X509Certificate<'a>) -> Result<[u8; 6]> {
     let sgx_extensions_bytes = cert
         .get_extension_unique(&oid!(1.2.840 .113741 .1 .13 .1))
-        .unwrap()
-        .unwrap()
+        .map_err(|e| TdxError::X509(format!("Duplicate SGX extensions in certificate: {e}")))?
+        .ok_or_else(|| TdxError::X509("Certificate missing SGX extensions (OID 1.2.840.113741.1.13.1)".to_string()))?
         .value;
 
-    let (_, sgx_extensions) = Sequence::from_der(sgx_extensions_bytes).unwrap();
-
-    let mut fmspc = [0; 6];
+    let (_, sgx_extensions) = Sequence::from_der(sgx_extensions_bytes)
+        .map_err(|e| TdxError::X509(format!("Failed to parse SGX extensions sequence: {e}")))?;
 
     let mut i = sgx_extensions.content.as_ref();
 
-    while i.len() > 0 {
-        let (j, current_sequence) = Sequence::from_der(i).unwrap();
+    while !i.is_empty() {
+        let (j, current_sequence) = Sequence::from_der(i)
+            .map_err(|e| TdxError::X509(format!("Failed to parse SGX extension entry: {e}")))?;
         i = j;
-        let (j, current_oid) = Oid::from_der(current_sequence.content.as_ref()).unwrap();
-        match current_oid.to_id_string().as_str() {
-            "1.2.840.113741.1.13.1.4" => {
-                let (k, fmspc_bytes) = OctetString::from_der(j).unwrap();
-                assert_eq!(k.len(), 0);
-                fmspc.copy_from_slice(fmspc_bytes.as_ref());
-                break;
+        let (j, current_oid) = Oid::from_der(current_sequence.content.as_ref())
+            .map_err(|e| TdxError::X509(format!("Failed to parse SGX extension OID: {e}")))?;
+        if current_oid.to_id_string() == "1.2.840.113741.1.13.1.4" {
+            let (_, fmspc_bytes) = OctetString::from_der(j)
+                .map_err(|e| TdxError::X509(format!("Failed to parse FMSPC octet string: {e}")))?;
+            let mut fmspc = [0u8; 6];
+            let fmspc_ref = fmspc_bytes.as_ref();
+            if fmspc_ref.len() != 6 {
+                return Err(TdxError::X509(format!(
+                    "FMSPC has unexpected length: {} (expected 6)",
+                    fmspc_ref.len()
+                )));
             }
-            _ => continue,
+            fmspc.copy_from_slice(fmspc_ref);
+            return Ok(fmspc);
         }
     }
 
-    fmspc
+    Err(TdxError::X509("FMSPC extension (OID 1.2.840.113741.1.13.1.4) not found in certificate".to_string()))
 }
