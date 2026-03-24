@@ -1,4 +1,4 @@
-use crate::error::Result;
+use crate::error::{Result, TdxError};
 use crate::utils::generate_random_data;
 use coco_provider::{
     coco::{CocoDeviceType, ReportRequest},
@@ -31,7 +31,7 @@ impl Device {
         let options = DeviceOptions { report_data: None };
         let provider = get_coco_provider()?;
         if provider.device_type == CocoDeviceType::Mock {
-            return Err("Mock device is not supported!".into());
+            return Err(TdxError::ConfigOptions("Mock device is not supported".to_string()));
         }
         Ok(Device { options, provider })
     }
@@ -39,7 +39,7 @@ impl Device {
     pub fn new(options: DeviceOptions) -> Result<Self> {
         let provider = get_coco_provider()?;
         if provider.device_type == CocoDeviceType::Mock {
-            return Err("Mock device is not supported!".into());
+            return Err(TdxError::ConfigOptions("Mock device is not supported".to_string()));
         }
         Ok(Device { options, provider })
     }
@@ -47,8 +47,10 @@ impl Device {
     pub fn get_attestation_report_raw(&self) -> Result<(Vec<u8>, Option<Vec<u8>>)> {
         let report_data = match self.provider.device_type {
             CocoDeviceType::Tpm => {
-                if !self.options.report_data.is_none() {
-                    return Err("report_data cannot be provided for TPM device type!".into());
+                if self.options.report_data.is_some() {
+                    return Err(TdxError::ConfigOptions(
+                        "report_data cannot be provided for TPM device type".to_string(),
+                    ));
                 }
                 None
             }

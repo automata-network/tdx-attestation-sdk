@@ -13,6 +13,7 @@ use std::time::SystemTime;
 
 use crate::utils::der_to_pem_bytes;
 
+#[derive(Debug, Clone, Default)]
 pub struct Tdx;
 
 impl Tdx {
@@ -121,7 +122,13 @@ pub mod c {
     /// Helper to store report and var_data into the global statics.
     /// Returns the report length on success, or a negative error code on failure.
     fn store_report(report_bytes: Vec<u8>, var_data: Option<Vec<u8>>) -> i32 {
-        let report_len = report_bytes.len() as i32;
+        let report_len = match i32::try_from(report_bytes.len()) {
+            Ok(len) => len,
+            Err(_) => {
+                eprintln!("tdx: report length exceeds i32::MAX");
+                return TDX_ERR_ATTESTATION_FAILED;
+            }
+        };
         match ATTESTATION_REPORT.lock() {
             Ok(mut t) => *t = report_bytes,
             Err(e) => {
@@ -129,13 +136,12 @@ pub mod c {
                 return TDX_ERR_LOCK_POISONED;
             }
         }
-        if let Some(v) = var_data {
-            match VAR_DATA.lock() {
-                Ok(mut t) => *t = v,
-                Err(e) => {
-                    eprintln!("tdx: var data lock poisoned: {e}");
-                    return TDX_ERR_LOCK_POISONED;
-                }
+        // Always update var_data: clear it when None to avoid stale data from previous calls
+        match VAR_DATA.lock() {
+            Ok(mut t) => *t = var_data.unwrap_or_default(),
+            Err(e) => {
+                eprintln!("tdx: var data lock poisoned: {e}");
+                return TDX_ERR_LOCK_POISONED;
             }
         }
         report_len
@@ -224,7 +230,7 @@ pub mod c {
         unsafe {
             copy_nonoverlapping(bytes.as_ptr(), buf, bytes.len());
         }
-        bytes.len() as i32
+        bytes.len() as i32 // safe: checked via buf_len which is usize from C caller
     }
 
     /// Retrieve the length of var_data.

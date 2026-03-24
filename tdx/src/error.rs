@@ -63,12 +63,6 @@ impl From<ureq::Error> for TdxError {
     }
 }
 
-impl From<&str> for TdxError {
-    fn from(err: &str) -> Self {
-        TdxError::Firmware(err.to_string())
-    }
-}
-
 impl From<anyhow::Error> for TdxError {
     fn from(err: anyhow::Error) -> Self {
         TdxError::Anyhow(err.to_string())
