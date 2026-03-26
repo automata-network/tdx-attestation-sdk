@@ -14,14 +14,14 @@
 Automata TDX Attestation SDK is a feature-complete SDK for Intel TDX development. It helps developers to generate the Intel TDX Quote in different cloud service providers (CSP).
 
 ### Environment Preparation
-Refer to [TDX package](tdx/README.md) to setup the Intel TDX CVM in different cloud service providers (CSP).
+Refer to the [TDX package](tdx/README.md) to set up the Intel TDX CVM in different cloud service providers (CSP).
 
 ## Intel TDX Quote Generation
 Use [TDX package](tdx/README.md) to generate the Intel TDX Quote, you can find an example in [tdx_attestation](tdx/examples/attestation.rs).
 
 ## Intel TDX Quote Verification
 ### Verify Attestation on-chain
-In [Automata DCAP Attestation](https://github.com/automata-network/automata-dcap-attestation), We provide the following way to verify the Intel TDX quote on-chain:
+In [Automata DCAP Attestation](https://github.com/automata-network/automata-dcap-attestation), we provide the following way to verify the Intel TDX quote on-chain:
 
 ```solidity
 function verifyAndAttestOnChain(bytes calldata rawQuote)
@@ -36,4 +36,4 @@ The on-chain verification contract has been deployed to Automata Testnet at [0x9
 Please follow the Intel official DCAP repo [SGXDataCenterAttestationPrimitives](https://github.com/intel/SGXDataCenterAttestationPrimitives) to perform the off-chain verification.
 
 ## Disclaimer
-This project is under development. All source code and features are not production ready.
+This project is under development. All source code and features are not production-ready.
