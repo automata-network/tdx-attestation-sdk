@@ -28,7 +28,6 @@ serde.workspace = true
 hex.workspace = true
 alloy.workspace = true
 anyhow.workspace = true
-chrono.workspace = true
 tokio.workspace = true
 x509-parser.workspace = true
 clap.workspace = true

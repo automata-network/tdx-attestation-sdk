@@ -86,9 +86,9 @@ impl Tdx {
 
         // Convert library's Collaterals to dcap-rs Collateral
         // The library returns DER-encoded certs, dcap-rs expects PEM for the cert chain
-        let signing_ca_pem = der_to_pem_bytes(&collaterals.tcb_signing_ca);
-        let root_ca_pem = der_to_pem_bytes(&collaterals.root_ca);
-        let combined_pem = [signing_ca_pem, root_ca_pem].concat();
+        let mut combined_pem =
+            der_to_pem_bytes(&collaterals.tcb_signing_ca);
+        combined_pem.extend_from_slice(&der_to_pem_bytes(&collaterals.root_ca));
 
         Ok(Collateral::new(
             &collaterals.root_ca_crl,
@@ -211,7 +211,7 @@ pub mod c {
             return TDX_ERR_NULL_POINTER;
         }
         let bytes = match ATTESTATION_REPORT.lock() {
-            Ok(t) => t.clone(),
+            Ok(t) => t,
             Err(e) => {
                 eprintln!("tdx: attestation report lock poisoned: {e}");
                 return TDX_ERR_LOCK_POISONED;
@@ -261,7 +261,7 @@ pub mod c {
             return TDX_ERR_NULL_POINTER;
         }
         let bytes = match VAR_DATA.lock() {
-            Ok(t) => t.clone(),
+            Ok(t) => t,
             Err(e) => {
                 eprintln!("tdx: var data lock poisoned: {e}");
                 return TDX_ERR_LOCK_POISONED;
