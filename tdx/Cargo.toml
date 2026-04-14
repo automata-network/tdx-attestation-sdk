@@ -32,6 +32,7 @@ tokio.workspace = true
 x509-parser.workspace = true
 clap.workspace = true
 pem.workspace = true
+thiserror.workspace = true
 
 coco-provider = { git = "https://github.com/automata-network/coco-provider-sdk", optional = true, default-features = false }
 dcap-rs = { git = "https://github.com/automata-network/automata-dcap-attestation", rev="b996b1b" }

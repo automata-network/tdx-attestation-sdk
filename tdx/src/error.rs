@@ -1,43 +1,32 @@
-use std::fmt::Display;
-
 use coco_provider::error::CocoError;
 
 pub type Result<T> = std::result::Result<T, TdxError>;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, thiserror::Error)]
 pub enum TdxError {
+    #[error("Anyhow: {0}")]
     Anyhow(String),
+    #[error("ConfigOptions: {0}")]
     ConfigOptions(String),
+    #[error("Cpu: {0}")]
     Cpu(String),
+    #[error("Dcap: {0}")]
     Dcap(String),
+    #[error("Firmware: {0}")]
     Firmware(String),
+    #[error("Http: {0}")]
     Http(String),
+    #[error("IO: {0}")]
     IO(String),
+    #[error("SSL: {0}")]
     SSL(String),
+    #[error("Tpm: {0}")]
     Tpm(String),
+    #[error("X509: {0}")]
     X509(String),
+    #[error("Unknown")]
     Unknown,
 }
-
-impl Display for TdxError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            TdxError::Anyhow(err) => write!(f, "Anyhow: {}", err),
-            TdxError::ConfigOptions(err) => write!(f, "ConfigOptions: {}", err),
-            TdxError::Cpu(err) => write!(f, "Cpu: {}", err),
-            TdxError::Dcap(err) => write!(f, "Dcap: {}", err),
-            TdxError::Firmware(err) => write!(f, "Firmware: {}", err),
-            TdxError::Http(err) => write!(f, "Http: {}", err),
-            TdxError::IO(err) => write!(f, "IO: {}", err),
-            TdxError::SSL(err) => write!(f, "SSL: {}", err),
-            TdxError::Tpm(err) => write!(f, "Tpm: {}", err),
-            TdxError::X509(err) => write!(f, "X509: {}", err),
-            TdxError::Unknown => write!(f, "Unknown"),
-        }
-    }
-}
-
-impl std::error::Error for TdxError {}
 
 impl From<CocoError> for TdxError {
     fn from(err: CocoError) -> Self {
