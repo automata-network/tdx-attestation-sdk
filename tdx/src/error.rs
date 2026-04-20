@@ -30,25 +30,25 @@ pub enum TdxError {
 
 impl From<CocoError> for TdxError {
     fn from(err: CocoError) -> Self {
-        TdxError::Firmware(format!("{:?}", err))
+        TdxError::Firmware(err.to_string())
     }
 }
 
 impl From<base64_url::base64::DecodeError> for TdxError {
     fn from(err: base64_url::base64::DecodeError) -> Self {
-        TdxError::IO(format!("{:?}", err))
+        TdxError::IO(err.to_string())
     }
 }
 
 impl From<std::io::Error> for TdxError {
     fn from(err: std::io::Error) -> Self {
-        TdxError::IO(format!("{:?}", err))
+        TdxError::IO(err.to_string())
     }
 }
 
 impl From<ureq::Error> for TdxError {
     fn from(err: ureq::Error) -> Self {
-        TdxError::Http(format!("{:?}", err))
+        TdxError::Http(err.to_string())
     }
 }
 
@@ -60,6 +60,6 @@ impl From<anyhow::Error> for TdxError {
 
 impl From<std::str::Utf8Error> for TdxError {
     fn from(err: std::str::Utf8Error) -> Self {
-        TdxError::IO(format!("{:?}", err))
+        TdxError::IO(err.to_string())
     }
 }

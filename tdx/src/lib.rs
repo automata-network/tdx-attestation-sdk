@@ -30,7 +30,7 @@ impl Tdx {
     /// Var data is only available if the device resides on an Azure Confidential VM.
     /// Var data provided by Azure can be used to verify the contents of the attestation report's report_data
     pub fn get_attestation_report_raw(&self) -> Result<(Vec<u8>, Option<Vec<u8>>)> {
-        let device = device::Device::default()?;
+        let device = device::Device::with_default_options()?;
         device.get_attestation_report_raw()
     }
 
@@ -77,7 +77,7 @@ impl Tdx {
         .await
         .map_err(|e| match e {
             CollateralError::Missing(report) => {
-                TdxError::Http(format!("Missing collaterals: {:?}", report))
+                TdxError::Http(format!("Missing collaterals: {report:?}"))
             }
             CollateralError::Validation(msg) => {
                 TdxError::Http(format!("Validation error: {}", msg))
