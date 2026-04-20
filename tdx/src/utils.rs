@@ -10,12 +10,11 @@ pub enum PckCA {
     Platform,
     Processor,
 }
-/// Generates 64 bytes of random data
-/// Always guaranteed to return something (ie, unwrap() can be safely called)
-pub fn generate_random_data() -> Option<[u8; 64]> {
+/// Generates 64 bytes of random data.
+pub fn generate_random_data() -> [u8; 64] {
     let mut data = [0u8; 64];
     rand::thread_rng().fill_bytes(&mut data);
-    Some(data)
+    data
 }
 
 pub fn der_to_pem_bytes(der_bytes: &[u8]) -> Vec<u8> {

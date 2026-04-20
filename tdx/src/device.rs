@@ -27,13 +27,9 @@ struct QuoteResponse {
 }
 
 impl Device {
-    pub fn default() -> Result<Self> {
-        let options = DeviceOptions { report_data: None };
-        let provider = get_coco_provider()?;
-        if provider.device_type == CocoDeviceType::Mock {
-            return Err(TdxError::ConfigOptions("Mock device is not supported".to_string()));
-        }
-        Ok(Device { options, provider })
+    /// Create a Device with default options (random `report_data`).
+    pub fn with_default_options() -> Result<Self> {
+        Self::new(DeviceOptions { report_data: None })
     }
 
     pub fn new(options: DeviceOptions) -> Result<Self> {
