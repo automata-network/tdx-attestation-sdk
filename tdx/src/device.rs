@@ -50,7 +50,7 @@ impl Device {
                 }
                 None
             }
-            _ => self.options.report_data.or_else(generate_random_data),
+            _ => self.options.report_data.or_else(|| Some(generate_random_data())),
         };
         let req = ReportRequest {
             report_data,
