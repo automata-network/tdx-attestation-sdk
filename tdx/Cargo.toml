@@ -35,7 +35,7 @@ pem.workspace = true
 thiserror.workspace = true
 
 coco-provider = { git = "https://github.com/automata-network/coco-provider-sdk", optional = true, default-features = false }
-dcap-rs = { git = "https://github.com/automata-network/automata-dcap-attestation", rev="b996b1b" }
+dcap-rs = { git = "https://github.com/automata-network/automata-dcap-attestation", rev="v1.1.2" }
 # Automata DCAP libraries for on-chain PCCS, v1.1
-pccs-reader-rs = { git = "https://github.com/automata-network/automata-dcap-attestation", rev = "b996b1b" }
-automata-dcap-network-registry = { git = "https://github.com/automata-network/automata-dcap-attestation", rev = "b996b1b" }
+pccs-reader-rs = { git = "https://github.com/automata-network/automata-dcap-attestation", rev = "v1.1.2" }
+automata-dcap-network-registry = { git = "https://github.com/automata-network/automata-dcap-attestation", rev = "v1.1.2" }
